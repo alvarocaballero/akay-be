@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Akay.Be.Application/Akay.Be.Application.csproj" />
+    <Project Path="src/Akay.Be.Domain/Akay.Be.Domain.csproj" />
+    <Project Path="src/Akay.Be.Host/Akay.Be.Host.csproj" />
+    <Project Path="src/Akay.Be.Infrastructure/Akay.Be.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/solution items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="NuGet.Config" />
+    <File Path="docker-compose.yml" />
+    <File Path=".github/workflows/ci.yml" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Akay.Be.Application.Tests/Akay.Be.Application.Tests.csproj" />
+    <Project Path="test/Akay.Be.Architecture.Tests/Akay.Be.Architecture.Tests.csproj" />
+    <Project Path="test/Akay.Be.Domain.Tests/Akay.Be.Domain.Tests.csproj" />
+    <Project Path="test/Akay.Be.Host.Tests/Akay.Be.Host.Tests.csproj" />
+    <Project Path="test/Akay.Be.Infrastructure.Tests/Akay.Be.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

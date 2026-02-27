@@ -1,0 +1,12 @@
+services:
+  akay.be.host:
+    image: akaybehost
+    build:
+      context: .
+      dockerfile: src/Akay.Be.Host/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
