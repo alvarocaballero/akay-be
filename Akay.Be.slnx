@@ -21,4 +21,6 @@
     <Project Path="test/Akay.Be.Host.Tests/Akay.Be.Host.Tests.csproj" />
     <Project Path="test/Akay.Be.Infrastructure.Tests/Akay.Be.Infrastructure.Tests.csproj" />
   </Folder>
+  <Project Path="../Akay.To/Akay.To.Azure/Akay.To.Azure.csproj" />
+  <Project Path="../Akay.To/Akay.To.Core/Akay.To.Core.csproj" />
 </Solution>
