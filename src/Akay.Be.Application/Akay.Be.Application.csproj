@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="Akay.To.Core" />
+    <PackageReference Include="Akay.To.Core" Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')">
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
   </ItemGroup>
