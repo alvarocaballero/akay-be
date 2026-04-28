@@ -12,10 +12,8 @@
 
 ## Private Packages
 
-- GitHub Packages feed: `https://nuget.pkg.github.com/alvarocaballero`
+- Feed: `nuget.org`
 - Packages: `Akay.To.*` (mapped in `NuGet.Config`)
-- Credentials: env vars `GITHUB_PACKAGES_USERNAME`, `GITHUB_PACKAGES_TOKEN`
-- CI uses secret `GH_PACKAGES_READ_TOKEN`
 
 ## Project Structure
 
@@ -41,4 +39,4 @@
 
 - Workflow: `.github/workflows/ci.yml`
 - Branch protection: `main` requires PR + 1 approval
-- Secrets: `GH_PACKAGES_READ_TOKEN` (GitHub repo secrets)
+- Secrets: none required for NuGet packages

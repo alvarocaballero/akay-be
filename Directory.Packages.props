@@ -3,11 +3,11 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Akay.To.Azure" Version="0.0.4" />
-    <PackageVersion Include="Akay.To.Core" Version="1.0.1" />
+    <PackageVersion Include="Akay.To.Azure" Version="0.0.7" />
+    <PackageVersion Include="Akay.To.Core" Version="0.0.4" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
+    <!--<PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />-->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
