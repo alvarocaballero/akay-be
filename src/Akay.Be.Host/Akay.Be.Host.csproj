@@ -6,14 +6,20 @@
     <UserSecretsId>5331ec7b-8505-46c0-9589-af5de44e3daa</UserSecretsId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Akay.To.Azure" />
-    <PackageReference Include="Akay.To.Core" />
+  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')">
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj')">
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalAkayTo)' != 'true'">
+    <PackageReference Include="Akay.To.Core" VersionOverride="*" />
+    <PackageReference Include="Akay.To.Azure" VersionOverride="*" />
   </ItemGroup>
 
   <ItemGroup>
-    <!--<ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />-->
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
