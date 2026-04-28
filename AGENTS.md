@@ -35,8 +35,19 @@
 - Run: `dotnet test Akay.Be.slnx --configuration Release`
 - Architecture tests: `test/Akay.Be.Architecture.Tests/`
 
-## CI
+## Versioning
 
-- Workflow: `.github/workflows/ci.yml`
+- Source: `Directory.Build.props` (`<VersionPrefix>`)
+- Initial: `1.0.0`
+- Auto-bump: patch +1 on every merge to `main` via `.github/workflows/release.yml`
+- Manual bump: edit `VersionPrefix` in PR for minor/major changes
+
+## CI / Release
+
+- Validate: `.github/workflows/ci.yml` (runs on PR and push to `main`)
+- Release: `.github/workflows/release.yml` (runs on push to `main`)
+  - Bumps `VersionPrefix` patch
+  - Updates `CHANGELOG.md`
+  - Creates GitHub Release with tag
 - Branch protection: `main` requires PR + 1 approval
 - Secrets: none required for NuGet packages

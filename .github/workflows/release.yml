@@ -1,0 +1,99 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump patch version
+        id: bump_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumping $CURRENT -> $NEW_VERSION"
+
+      - name: Update Directory.Build.props
+        run: |
+          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>${{ steps.bump_version.outputs.new_version }}<\/VersionPrefix>/" Directory.Build.props
+
+      - name: Generate changelog entry
+        id: changelog
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+          DATE=$(date +%Y-%m-%d)
+
+          # Get commits since last tag or beginning
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
+          else
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges)
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Maintenance and dependency updates"
+          fi
+
+          # Build changelog block
+          {
+            echo "## [$NEW_VERSION] - $DATE"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+          } > /tmp/changelog_block.txt
+
+          # Insert after the Unreleased header
+          sed -i '/## \[Unreleased\]/r /tmp/changelog_block.txt' CHANGELOG.md
+
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Commit version bump and changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Directory.Build.props CHANGELOG.md
+          git commit -m "chore(release): bump version to ${{ steps.bump_version.outputs.new_version }} [skip ci]"
+          git push
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump_version.outputs.new_version }}
+          name: Release v${{ steps.bump_version.outputs.new_version }}
+          body: |
+            ## Changes in v${{ steps.bump_version.outputs.new_version }}
+
+            ${{ steps.changelog.outputs.commits }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

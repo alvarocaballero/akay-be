@@ -26,10 +26,10 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore Akay.Be.slnx
+        run: dotnet restore Akay.Be.slnx -p:UseLocalAkayTo=false
 
       - name: Build
-        run: dotnet build Akay.Be.slnx --no-restore --configuration Release
+        run: dotnet build Akay.Be.slnx --no-restore --configuration Release -p:UseLocalAkayTo=false
 
       - name: Test
-        run: dotnet test Akay.Be.slnx --no-build --configuration Release
+        run: dotnet test Akay.Be.slnx --no-build --configuration Release -p:UseLocalAkayTo=false
