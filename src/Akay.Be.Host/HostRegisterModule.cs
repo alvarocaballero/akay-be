@@ -15,13 +15,19 @@ internal static class HostRegisterModule
     /// <param name="builder"></param>
     /// <param name="appConfigEndpointKey"></param>
     /// <param name="appConfigPrefixKey"></param>
-    public static void ConfigureServices(this WebApplicationBuilder builder, string appConfigEndpointKey, string appConfigPrefixKey)
+    /// <param name="keyVaultEndpointKey"></param>
+    public static void ConfigureServices(this WebApplicationBuilder builder,
+                                         string? appConfigEndpointKey = null,
+                                         string? appConfigPrefixKey = null,
+                                         string? keyVaultEndpointKey = null)
     {
-        var appConfigEndpoint = Environment.GetEnvironmentVariable(appConfigEndpointKey) ?? builder.Configuration[appConfigEndpointKey];
-        var appConfigPrefixes = Environment.GetEnvironmentVariable(appConfigPrefixKey) ?? builder.Configuration[appConfigPrefixKey];
+        // Azure App Configuration y Azure Key Vault son opcionales y solo se usaría uno u otro dependiendo de las necesidades,
+        // por eso se pueden configurar por variables de entorno o por appsettings.json y si no se configuran no se añaden al pipeline de configuración
+        builder.AddAzureAppConfiguration(
+            appConfigEndpointKey == null ? null : Environment.GetEnvironmentVariable(appConfigEndpointKey) ?? builder.Configuration[appConfigEndpointKey],
+            appConfigPrefixKey == null ? null : Environment.GetEnvironmentVariable(appConfigPrefixKey) ?? builder.Configuration[appConfigPrefixKey]);
 
-        if (!string.IsNullOrWhiteSpace(appConfigEndpoint) && !string.IsNullOrWhiteSpace(appConfigPrefixes))
-            builder.AddAzureAppConfigurations(appConfigEndpoint, appConfigPrefixes);
+        builder.AddAzureKeyVault(keyVaultEndpointKey == null ? null : Environment.GetEnvironmentVariable(keyVaultEndpointKey) ?? builder.Configuration[keyVaultEndpointKey]);
 
         var settings = builder.AddConfigurations<ApplicationSettings, ApplicationSettingsValidator>();
 
