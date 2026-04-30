@@ -38,6 +38,7 @@ internal static class HostRegisterModule
                         .AddExceptionHandlerProblemDetails()
                         .AddCorsOptions(settings?.AllowedHosts)
                         .AddCultureInfo(settings?.CultureInfo)
+                        .AddBearerOrApiKeyAuthentication(settings?.Security)
                         .AddHealthChecks();
 
         builder.Services.AddInfrastructureServices(settings)
@@ -86,7 +87,7 @@ internal static class HostRegisterModule
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
-        });
+        }).AllowAnonymous();
 
         app.MapControllers();
 

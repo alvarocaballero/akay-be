@@ -1,12 +1,13 @@
-﻿using FluentValidation;
+﻿using Akay.To.Core.Application;
+using FluentValidation;
 
 namespace Akay.Be.Application;
 
-public class ApplicationSettingsValidator : AbstractValidator<ApplicationSettings>
+public class ApplicationSettingsValidator : BaseApplicationSettingsValidator<ApplicationSettings>
 {
     public ApplicationSettingsValidator()
     {
-        RuleFor(x => x.AllowedHosts).NotEmpty();
-        ////RuleFor(x => x.ProcessId).NotEmpty();
+        // Reglas específicas de Akay.Be
+        ////RuleFor(x => x.AllowedHosts).NotEmpty();
     }
 }
