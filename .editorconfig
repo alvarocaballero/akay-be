@@ -301,3 +301,6 @@ dotnet_diagnostic.IDE0060.severity = suggestion
 
 # IDE0011: Agregar llaves
 dotnet_diagnostic.IDE0011.severity = silent
+
+# S2094: Classes should not be empty
+dotnet_diagnostic.S2094.severity = none

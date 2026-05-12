@@ -13,6 +13,6 @@ builder.ConfigureServices(appConfigEndpointKey: appConfigEndpointKey,
 
 var app = builder.Build();
 
-app.Configure(app.Environment);
+app.Configure();
 
 await app.RunAsync();

@@ -9,7 +9,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void DomainShouldNotDependOnOuterLayers()
     {
-        TestResult result = Types.InAssembly(typeof(Entity).Assembly)
+        NetArchTest.Rules.TestResult result = Types.InAssembly(typeof(Entity).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny("Akay.Be.Application", "Akay.Be.Infrastructure", "Akay.Be.Host")
             .GetResult();
@@ -20,7 +20,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void ApplicationShouldNotDependOnOuterLayers()
     {
-        TestResult result = Types.InAssembly(Assembly.Load("Akay.Be.Application"))
+        NetArchTest.Rules.TestResult result = Types.InAssembly(Assembly.Load("Akay.Be.Application"))
             .ShouldNot()
             .HaveDependencyOnAny("Akay.Be.Infrastructure", "Akay.Be.Host")
             .GetResult();
@@ -31,7 +31,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void InfrastructureShouldNotDependOnHost()
     {
-        TestResult result = Types.InAssembly(Assembly.Load("Akay.Be.Infrastructure"))
+        NetArchTest.Rules.TestResult result = Types.InAssembly(Assembly.Load("Akay.Be.Infrastructure"))
             .ShouldNot()
             .HaveDependencyOnAny("Akay.Be.Host")
             .GetResult();
@@ -42,14 +42,14 @@ public sealed class ArchitectureTests
     [Fact]
     public void DomainEventsMustBeSealed()
     {
-        TestResult implementationsResult = Types.InAssembly(typeof(Entity).Assembly)
+        NetArchTest.Rules.TestResult implementationsResult = Types.InAssembly(typeof(Entity).Assembly)
             .That()
             .ImplementInterface(typeof(IDomainEvent))
             .Should()
             .BeSealed()
             .GetResult();
 
-        TestResult inheritanceResult = Types.InAssembly(typeof(Entity).Assembly)
+        NetArchTest.Rules.TestResult inheritanceResult = Types.InAssembly(typeof(Entity).Assembly)
             .That()
             .Inherit(typeof(DomainEvent))
             .Should()

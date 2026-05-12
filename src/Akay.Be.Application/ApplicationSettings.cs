@@ -1,5 +1,4 @@
-﻿
-using Akay.To.Core.Application;
+﻿using Akay.To.Core.Application.ApplicationSettings;
 
 namespace Akay.Be.Application;
 

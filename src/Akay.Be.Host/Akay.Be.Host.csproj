@@ -15,12 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akay.To.Azure" />
-    <PackageReference Include="Akay.To.Core" />
+    <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
+    <ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
-    <ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
+    <Folder Include="Docs\Wiki\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akay.To.Azure" />
+    <PackageReference Include="Akay.To.Core" />
   </ItemGroup>
 </Project>

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   release:
@@ -17,83 +18,178 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_BOT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      - name: Get current version
-        id: current_version
+      - name: Get merged PR info
+        id: pr_info
         run: |
-          VERSION=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          PR_DATA=$(gh pr list --repo ${{ github.repository }} --search "${{ github.sha }}" --state merged --json number,title,body --jq '.[0]')
 
-      - name: Bump patch version
-        id: bump_version
+          if [ -n "$PR_DATA" ] && [ "$PR_DATA" != "null" ]; then
+            PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+            PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+            PR_BODY=$(echo "$PR_DATA" | jq -r '.body // empty')
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+            {
+              echo "pr_body<<PRBODYEOF"
+              echo "$PR_BODY"
+              echo "PRBODYEOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "pr_title=$(git log -1 --pretty=%s)" >> $GITHUB_OUTPUT
+            {
+              echo "pr_body<<PRBODYEOF"
+              echo ""
+              echo "PRBODYEOF"
+            } >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine release version
+        id: version
         run: |
-          CURRENT="${{ steps.current_version.outputs.version }}"
+          CURRENT=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props)
+
+          # Check if there's an open release PR
+          EXISTING_PR=$(gh pr list --repo ${{ github.repository }} --search "chore(release): bump version to" --state open --json headRefName,body --jq '.[0]')
+
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            # Extract version from PR body (e.g., "Release v1.0.1")
+            VERSION=$(echo "$EXISTING_PR" | jq -r '.body' | grep -oP '(?<=Release v)\d+\.\d+\.\d+' | head -1)
+            if [ -n "$VERSION" ]; then
+              echo "Reusing version from existing release PR: $VERSION"
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "existing_pr=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          # Bump patch version
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Bumping $CURRENT -> $NEW_VERSION"
+          VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "Bumping $CURRENT -> $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "existing_pr=false" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Directory.Build.props
+      - name: Update version in Directory.Build.props
         run: |
-          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>${{ steps.bump_version.outputs.new_version }}<\/VersionPrefix>/" Directory.Build.props
+          sed -i "s/<VersionPrefix>.*<\/VersionPrefix>/<VersionPrefix>${{ steps.version.outputs.version }}<\/VersionPrefix>/" Directory.Build.props
 
-      - name: Generate changelog entry
+      - name: Update CHANGELOG.md
         id: changelog
         run: |
-          NEW_VERSION="${{ steps.bump_version.outputs.new_version }}"
+          VERSION="${{ steps.version.outputs.version }}"
           DATE=$(date +%Y-%m-%d)
+          PR_TITLE="${{ steps.pr_info.outputs.pr_title }}"
 
-          # Get commits since last tag or beginning
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
+          # Clean PR body
+          PR_BODY="${{ steps.pr_info.outputs.pr_body }}"
+          CLEAN_BODY=$(echo "$PR_BODY" | sed 's/<!--.*-->//g' | sed '/^[[:space:]]*$/d')
+
+          # Build new entry text (without header if appending to existing)
+          if [ "${{ steps.version.outputs.existing_pr }}" == "true" ]; then
+            {
+              echo ""
+              echo "- **$PR_TITLE**"
+              if [ -n "$CLEAN_BODY" ]; then
+                echo ""
+                echo "$CLEAN_BODY"
+              fi
+              echo ""
+            } > /tmp/new_entry.txt
           else
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges)
+            {
+              echo "## [$VERSION] - $DATE"
+              echo ""
+              echo "- **$PR_TITLE**"
+              if [ -n "$CLEAN_BODY" ]; then
+                echo ""
+                echo "$CLEAN_BODY"
+              fi
+              echo ""
+            } > /tmp/new_entry.txt
           fi
 
-          if [ -z "$COMMITS" ]; then
-            COMMITS="- Maintenance and dependency updates"
+          if [ "${{ steps.version.outputs.existing_pr }}" == "true" ]; then
+            # Append to existing version section in CHANGELOG.md
+            python3 << 'PYEOF'
+          import re
+
+          version = "${{ steps.version.outputs.version }}"
+          new_text = open('/tmp/new_entry.txt').read()
+
+          with open('CHANGELOG.md', 'r') as f:
+              content = f.read()
+
+          # Find the section for this version
+          pattern = rf'(## \[{re.escape(version)}\].*?)(?=\n## \[|$)'
+          match = re.search(pattern, content, re.DOTALL)
+
+          if match:
+              # Insert before the end of the matched section
+              end_pos = match.end()
+              content = content[:end_pos] + new_text + content[end_pos:]
+
+          with open('CHANGELOG.md', 'w') as f:
+              f.write(content)
+          PYEOF
+          else
+            # Insert after Unreleased header
+            sed -i '/## \[Unreleased\]/r /tmp/new_entry.txt' CHANGELOG.md
           fi
 
-          # Build changelog block
           {
-            echo "## [$NEW_VERSION] - $DATE"
-            echo ""
-            echo "$COMMITS"
-            echo ""
-          } > /tmp/changelog_block.txt
+            echo "entry<<EOF"
+            cat /tmp/new_entry.txt
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
-          # Insert after the Unreleased header
-          sed -i '/## \[Unreleased\]/r /tmp/changelog_block.txt' CHANGELOG.md
-
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Commit version bump and changelog
+      - name: Update README.md
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Directory.Build.props CHANGELOG.md
-          git commit -m "chore(release): bump version to ${{ steps.bump_version.outputs.new_version }} [skip ci]"
-          git push
+          cat > README.md << 'EOF'
+          # Akay.Be
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+          API para Akay.
+
+          ## Changelog
+
+          Consulta el historial de cambios en [CHANGELOG.md](CHANGELOG.md).
+          EOF
+
+      - name: Create or update release PR
+        uses: peter-evans/create-pull-request@v7
+        id: create_pr
         with:
-          tag_name: v${{ steps.bump_version.outputs.new_version }}
-          name: Release v${{ steps.bump_version.outputs.new_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(release): bump version to ${{ steps.version.outputs.version }}"
+          branch: release/${{ steps.version.outputs.version }}
+          base: main
+          title: "chore(release): bump version to ${{ steps.version.outputs.version }}"
           body: |
-            ## Changes in v${{ steps.bump_version.outputs.new_version }}
+            ## Release v${{ steps.version.outputs.version }}
 
-            ${{ steps.changelog.outputs.commits }}
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN }}
+            This PR updates the version and changelog for release v${{ steps.version.outputs.version }}.
+
+            ### Changes included
+
+            ${{ steps.changelog.outputs.entry }}
+
+            ---
+            *This PR was automatically generated by the release workflow.*
+          delete-branch: false
+
+      - name: Output PR URL
+        run: |
+          echo "Release PR created/updated: ${{ steps.create_pr.outputs.pull-request-url }}"

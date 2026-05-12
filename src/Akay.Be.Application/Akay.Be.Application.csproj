@@ -12,4 +12,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Akay.Be.Application.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\LearningHubs\" />
+  </ItemGroup>
 </Project>
