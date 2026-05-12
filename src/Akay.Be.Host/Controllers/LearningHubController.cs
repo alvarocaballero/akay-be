@@ -12,7 +12,7 @@ namespace Akay.Be.Host.Controllers;
 [SuppressMessage(
     "SonarAnalyzer.CSharp",
     "S6960:Controllers should not have too many responsibilities",
-    Justification = "Controller de pruebas para demostrar dispatcher síncrono y streaming en un único lugar.")]
+    Justification = "Controller de pruebas para demostrar dispatcher sï¿½ncrono y streaming en un ï¿½nico lugar.")]
 [ApiController]
 [Route("api/learning-hubs")]
 public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatcher streamDispatcher) : ControllerBase
@@ -46,5 +46,9 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
     [HttpDelete("{id:int}")]
     public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DeleteLearningHubCommand(id), cancellationToken)).ToNoContent();
+
+    [HttpPost("{id:int}/sync")]
+    public async Task<IResult> Sync(int id, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new SyncLearningHubCommand(id), cancellationToken)).ToOk();
 }
 

@@ -32,7 +32,7 @@ internal static class HostRegisterModule
 
         var settings = builder.AddConfigurations<ApplicationSettings, ApplicationSettingsValidator>();
 
-        builder.LoggerConfiguration(settings?.Application.Name, settings?.CorrelationHeader);
+        builder.AddObservability(settings?.Application.Name, settings?.CorrelationHeader);
 
         builder.Services.AddHttpInfrastructure(settings?.CorrelationHeader)
                         .AddHttpApi()

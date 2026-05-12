@@ -12,11 +12,21 @@ internal static class LearningHubStore
     private static int _nextId = 4;
     private static readonly Lock Lock = new();
 
-    public static IReadOnlyList<LearningHubData> GetAll() =>
-        Items.AsReadOnly();
+    public static IReadOnlyList<LearningHubData> GetAll()
+    {
+        lock (Lock)
+        {
+            return [.. Items];
+        }
+    }
 
-    public static LearningHubData? GetById(int id) =>
-        Items.Find(h => h.Id == id);
+    public static LearningHubData? GetById(int id)
+    {
+        lock (Lock)
+        {
+            return Items.Find(h => h.Id == id);
+        }
+    }
 
     public static LearningHubData Add(LearningHubData data)
     {
@@ -30,16 +40,39 @@ internal static class LearningHubStore
 
     public static bool Update(LearningHubData data)
     {
-        var index = Items.FindIndex(h => h.Id == data.Id);
-        if (index < 0)
-            return false;
+        lock (Lock)
+        {
+            var index = Items.FindIndex(h => h.Id == data.Id);
+            if (index < 0)
+                return false;
 
-        Items[index] = data with { UpdatedAt = DateTime.UtcNow };
-        return true;
+            Items[index] = data with { UpdatedAt = DateTime.UtcNow };
+            return true;
+        }
     }
 
-    public static bool Delete(int id) =>
-        Items.RemoveAll(h => h.Id == id) > 0;
+    public static bool Delete(int id)
+    {
+        lock (Lock)
+        {
+            return Items.RemoveAll(h => h.Id == id) > 0;
+        }
+    }
+
+    internal static void Reset()
+    {
+        lock (Lock)
+        {
+            Items.Clear();
+            Items.AddRange(
+            [
+                new(1, "Academia Newton", "Centro especializado en ciencias y matemáticas", "Calle Mayor 12, Madrid", "Ciencias", "active", DateTime.UtcNow.AddDays(-30), DateTime.UtcNow.AddDays(-1)),
+                new(2, "Instituto Cervantes", "Formación en idiomas y humanidades", "Avenida de la Cultura 45, Barcelona", "Idiomas", "active", DateTime.UtcNow.AddDays(-60), DateTime.UtcNow.AddDays(-3)),
+                new(3, "Centro Tecnológico Turing", "Bootcamps de programación y data science", "Calle Innovación 8, Valencia", "Tecnología", "active", DateTime.UtcNow.AddDays(-90), DateTime.UtcNow),
+            ]);
+            _nextId = 4;
+        }
+    }
 }
 
 internal sealed record LearningHubData(
