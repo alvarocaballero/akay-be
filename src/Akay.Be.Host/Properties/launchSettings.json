@@ -3,7 +3,7 @@
     "Docker": {
       "commandName": "Docker",
       "launchBrowser": true,
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/api/health",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
         "ASPNETCORE_HTTP_PORTS": "8080",
         "ASPNETCORE_HTTPS_PORTS": "8081"
@@ -14,7 +14,6 @@
     "http": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "api/health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
@@ -24,7 +23,6 @@
     "https": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "api/health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
@@ -34,19 +32,17 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "api/health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
   },
-  "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:49987/",
-      "sslPort": 44316
+      "applicationUrl": "http://localhost:56519/",
+      "sslPort": 44335
     }
   }
 }

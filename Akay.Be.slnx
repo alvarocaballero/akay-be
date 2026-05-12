@@ -1,4 +1,5 @@
 <Solution>
+  <Folder Name="/solution items/wiki/" />
   <Folder Name="/src/">
     <Project Path="src/Akay.Be.Application/Akay.Be.Application.csproj" />
     <Project Path="src/Akay.Be.Domain/Akay.Be.Domain.csproj" />
@@ -8,6 +9,7 @@
   <Folder Name="/solution items/">
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
+    <File Path="CHANGELOG.md" />
     <File Path="Directory.Build.props" />
     <File Path="NuGet.Config" />
     <File Path="Directory.Packages.props" />
@@ -22,4 +24,5 @@
     <Project Path="test/Akay.Be.Host.Tests/Akay.Be.Host.Tests.csproj" />
     <Project Path="test/Akay.Be.Infrastructure.Tests/Akay.Be.Infrastructure.Tests.csproj" />
   </Folder>
+  <Project Path="../Akay.To/Akay.To.Core/Akay.To.Core.csproj" />
 </Solution>

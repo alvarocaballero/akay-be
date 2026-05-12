@@ -1,9 +1,10 @@
 ﻿using Akay.Be.Application;
 using Akay.Be.Infrastructure;
 using Akay.To.Azure.Host;
-using Akay.To.Core.Host;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using System.Text.Json;
+using Akay.To.Core.Application.ApplicationSettings;
+using Akay.To.Core.Host.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Akay.To.Core.Application.Contexts;
 
 namespace Akay.Be.Host;
 
@@ -39,10 +40,33 @@ internal static class HostRegisterModule
                         .AddCorsOptions(settings?.AllowedHosts)
                         .AddCultureInfo(settings?.CultureInfo)
                         .AddBearerOrApiKeyAuthentication(settings?.Security)
+                        .AddOpenApi(settings?.Application, settings?.Security)
+                        .AddUserContext()
+                        .AddRateLimitPolicies(settings?.RateLimiting, new List<RateLimitPolicySettings>
+                        {
+                            new()
+                            {
+                                Name = "writer-rate-limit",
+                                Type = RateLimitType.PerFunction,
+                                PermitLimit = 5,
+                                IntervalSeconds = 60,
+                                QueueLimit = 0,
+                                PartitionKeyResolver = httpContext =>
+                                {
+                                    var userContext = httpContext.RequestServices
+                                        .GetRequiredService<IUserContext>();
+                                    var isWriter = userContext.Roles.Any(r =>
+                                        string.Equals(r, "writer", StringComparison.OrdinalIgnoreCase));
+                                    return isWriter
+                                        ? userContext.UserId.ToString()
+                                        : $"no-writer-{Guid.NewGuid():N}";
+                                }
+                            }
+                        })
                         .AddHealthChecks();
 
         builder.Services.AddInfrastructureServices(settings)
-                        .AddApplicationServices();
+                        .AddApplicationServices(settings);
     }
 
     /// <summary>
@@ -50,46 +74,25 @@ internal static class HostRegisterModule
     /// </summary>
     /// <param name="app"></param>
     /// <param name="env"></param>
-    public static WebApplication Configure(this WebApplication app, IWebHostEnvironment env)
+    public static WebApplication Configure(this WebApplication app)
     {
-        if (env.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage()
-                ;
-        }
+        var settings = app.Services.GetRequiredService<IOptions<ApplicationSettings>>();
 
-        app.UseStatusCodePages()
-           .UseExceptionHandler();
+        app.ConfigureLaunchUrl(app.Environment, settings.Value.Application.Name ?? "API")
+           .UseStatusCodePages()
+           .UseExceptionHandler()
 
-        app.UseRequestLocalization();
-        app.UseHeaderPropagation();
-        app.UseHttpsRedirection();
-        app.UseCors("AllowSpecificOrigins");
+           .UseRequestLocalization()
+           .UseHeaderPropagation()
+           .UseHttpsRedirection()
+           .UseCors("AllowSpecificOrigins")
 
-        app.UseAuthentication()
-           .UseAuthorization();
+           .UseAuthentication()
+           .UseAuthorization()
+           .UseRateLimiter();
 
-        app.MapHealthChecks("/health", new HealthCheckOptions
-        {
-            ResponseWriter = async (context, report) =>
-            {
-                var response = new
-                {
-                    status = report.Status.ToString(),
-                    checks = report.Entries.Select(e => new
-                    {
-                        name = e.Key,
-                        status = e.Value.Status.ToString(),
-                        exception = e.Value.Exception?.Message
-                    })
-                };
-
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-            }
-        }).AllowAnonymous();
-
-        app.MapControllers();
+        app.UseHealthChecksEndpoint("/health")
+           .MapControllers();
 
         return app;
     }

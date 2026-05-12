@@ -1,5 +1,6 @@
 ﻿using Akay.Be.Application;
 using Microsoft.Extensions.DependencyInjection;
+using Akay.To.Core.Infrastructure.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
 
@@ -13,6 +14,11 @@ public static class InfrastructureRegisterModule
     /// <returns></returns>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings)
     {
+
+        //Base
+        services
+            .AddCache(settings);
+
         services
             .AddServices()
             .AddRepositories();
@@ -20,12 +26,12 @@ public static class InfrastructureRegisterModule
         return services;
     }
 
-    private static IServiceCollection AddRepositories(this IServiceCollection services)
+
+    private static IServiceCollection AddServices(this IServiceCollection services)
     {
         return services;
     }
-
-    private static IServiceCollection AddServices(this IServiceCollection services)
+    private static IServiceCollection AddRepositories(this IServiceCollection services)
     {
         return services;
     }

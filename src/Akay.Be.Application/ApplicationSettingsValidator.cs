@@ -1,4 +1,4 @@
-﻿using Akay.To.Core.Application;
+﻿using Akay.To.Core.Application.ApplicationSettings;
 using FluentValidation;
 
 namespace Akay.Be.Application;
