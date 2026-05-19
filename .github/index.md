@@ -7,3 +7,4 @@
 - [OpenTelemetry](<OpenTelemetry/OpenTelemetry.md>)
 - [Serilog](<Serilog/Serilog.md>)
 - [HybridCache](<HybridCache/HybridCache.md>)
+- [Blob Storage](<BlobStorage/BlobStorage.md>)

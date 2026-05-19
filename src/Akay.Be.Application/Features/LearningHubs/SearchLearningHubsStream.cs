@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-using Akay.To.Core.Application.Mediator;
+using Akay.To.Core.Application.Abstractions.Mediator;
 
 namespace Akay.Be.Application.Features.LearningHubs;
 
@@ -7,8 +7,7 @@ public sealed record SearchLearningHubsStreamRequest(string SearchTerm) : IStrea
 
 public sealed record LearningHubStreamItem(int Id, string Name, string Category, string Relevance);
 
-internal sealed class SearchLearningHubsStreamHandler
-    : IStreamRequestHandler<SearchLearningHubsStreamRequest, LearningHubStreamItem>
+internal sealed class SearchLearningHubsStreamHandler : IStreamRequestHandler<SearchLearningHubsStreamRequest, LearningHubStreamItem>
 {
     public async IAsyncEnumerable<LearningHubStreamItem> Handle(SearchLearningHubsStreamRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

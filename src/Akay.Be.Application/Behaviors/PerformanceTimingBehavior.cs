@@ -12,7 +12,7 @@
 /////// <typeparam name="TRequest"></typeparam>
 /////// <typeparam name="TResponse"></typeparam>
 /////// <param name="logger"></param>
-////public sealed class PerformanceTimingBehavior<TRequest, TResponse>(ILogger<PerformanceTimingBehavior<TRequest, TResponse>> logger) : IPipelineBehavior<TRequest, TResponse>
+////public sealed class PerformanceTimingBehavior/<TRequest, TResponse>(ILogger<PerformanceTimingBehavior<TRequest, TResponse>> logger) : IPipelineBehavior<TRequest, TResponse>
 ////    where TRequest : IRequest<TResponse>
 ////{
 ////    public async ValueTask<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)

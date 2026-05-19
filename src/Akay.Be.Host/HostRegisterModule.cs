@@ -4,7 +4,7 @@ using Akay.To.Azure.Host;
 using Akay.To.Core.Application.ApplicationSettings;
 using Akay.To.Core.Host.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Akay.To.Core.Application.Contexts;
+using Akay.To.Core.Application.Abstractions.Contexts;
 
 namespace Akay.Be.Host;
 

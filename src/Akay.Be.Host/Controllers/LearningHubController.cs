@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Akay.Be.Application.Features.LearningHubs;
-using Akay.To.Core.Host;
-using Akay.To.Core.Host.Mediator;
+using Akay.To.Core.Host.Abstractions.Mediator;
+using Akay.To.Core.Host.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -26,17 +26,38 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
     public async Task<IResult> GetById(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetLearningHubQuery(id), cancellationToken)).ToOk();
 
-    [HttpGet("{id:int}/cached")]
-    public async Task<IResult> GetCachedById(int id, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetCachedLearningHubQuery(id), cancellationToken)).ToOk();
+    [HttpGet("{id:int}/badge-uri")]
+    [AllowAnonymous]
+    public async Task<IResult> GetBadgeUri(int id, [FromQuery] bool forceRegenerate, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetLearningHubBadgeUriQuery(id, forceRegenerate), cancellationToken)).ToOk();
 
     [HttpPost("search-stream")]
     public IAsyncEnumerable<LearningHubStreamItem> SearchStream([FromBody] SearchLearningHubsStreamRequest request, CancellationToken cancellationToken) =>
         streamDispatcher.Stream(request, cancellationToken);
 
     [HttpPost]
-    public async Task<IResult> Create([FromBody] CreateLearningHubCommand command, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/learning-hubs/{value.Id}");
+    [EnableRateLimiting("writer-rate-limit")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IResult> Create([FromForm] string name,
+                                       [FromForm] string description,
+                                       [FromForm] string address,
+                                       [FromForm] string category,
+                                       [FromForm] int failedAttempts,
+                                       IFormFile file,
+                                       CancellationToken cancellationToken)
+    {
+        var command = new CreateLearningHubCommand(name,
+                                                   description,
+                                                   address,
+                                                   category,
+                                                   file.OpenReadStream(),
+                                                   file.FileName,
+                                                   file.ContentType,
+                                                   failedAttempts);
+
+        return (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/learning-hubs/{value.Id}");
+    }
+
 
     [HttpPut("{id:int}")]
     public async Task<IResult> Update(int id, [FromBody] UpdateLearningHubRequest request, CancellationToken cancellationToken) =>
@@ -46,9 +67,5 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
     [HttpDelete("{id:int}")]
     public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DeleteLearningHubCommand(id), cancellationToken)).ToNoContent();
-
-    [HttpPost("{id:int}/sync")]
-    public async Task<IResult> Sync(int id, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new SyncLearningHubCommand(id), cancellationToken)).ToOk();
+    
 }
-

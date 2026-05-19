@@ -1,4 +1,4 @@
-using Akay.To.Core.Application.Mediator;
+using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
 
@@ -9,19 +9,18 @@ public sealed record UpdateLearningHubRequest(string Name,
                                               string Address,
                                               string Category);
 
-public sealed record UpdateLearningHubCommand(int Id,
-                                              UpdateLearningHubRequest Request) : ICommand;
+public sealed record UpdateLearningHubCommand(int Id, UpdateLearningHubRequest Request) : ICommand;
 
 internal sealed class UpdateLearningHubCommandHandler : ICommandHandler<UpdateLearningHubCommand>
 {
-    public ValueTask<Result> Handle(UpdateLearningHubCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(UpdateLearningHubCommand command, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var existing = LearningHubStore.GetById(command.Id);
 
         if (existing is null)
-            return ValueTask.FromResult<Result>(Error.NotFound("learninghub.not_found", $"Centro de estudios con ID {command.Id} no encontrado."));
+            return Error.NotFound("learninghub.not_found", $"Centro de estudios con ID {command.Id} no encontrado.");
 
         var updated = existing with
         {
@@ -34,8 +33,8 @@ internal sealed class UpdateLearningHubCommandHandler : ICommandHandler<UpdateLe
         var success = LearningHubStore.Update(updated);
 
         return success
-            ? ValueTask.FromResult(Result.Success())
-            : ValueTask.FromResult<Result>(Error.Failure("learninghub.update_failed", "No se pudo actualizar el centro de estudios."));
+            ? Result.Success()
+            : Error.Failure("learninghub.update_failed", "No se pudo actualizar el centro de estudios.");
     }
 }
 

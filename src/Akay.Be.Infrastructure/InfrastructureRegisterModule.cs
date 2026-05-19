@@ -1,6 +1,7 @@
 ﻿using Akay.Be.Application;
 using Microsoft.Extensions.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
+using Akay.To.Azure.Infrastructure.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
 
@@ -17,7 +18,8 @@ public static class InfrastructureRegisterModule
 
         //Base
         services
-            .AddCache(settings);
+            .AddCache(settings)
+            .AddBlobStorage(settings);
 
         services
             .AddServices()

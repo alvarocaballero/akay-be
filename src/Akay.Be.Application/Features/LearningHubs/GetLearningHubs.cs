@@ -1,4 +1,4 @@
-using Akay.To.Core.Application.Mediator;
+using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.LearningHubs;
@@ -9,7 +9,7 @@ public sealed record LearningHubSummary(int Id, string Name, string Category, st
 
 internal sealed class GetLearningHubsQueryHandler : IQueryHandler<GetLearningHubsQuery, IReadOnlyList<LearningHubSummary>>
 {
-    public ValueTask<Result<IReadOnlyList<LearningHubSummary>>> Handle(GetLearningHubsQuery request, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<LearningHubSummary>>> Handle(GetLearningHubsQuery request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -21,9 +21,8 @@ internal sealed class GetLearningHubsQueryHandler : IQueryHandler<GetLearningHub
         if (!string.IsNullOrWhiteSpace(request.Status))
             hubs = hubs.Where(h => string.Equals(h.Status, request.Status, StringComparison.OrdinalIgnoreCase));
 
-        var summaries = hubs.Select(static h => new LearningHubSummary(h.Id, h.Name, h.Category, h.Status))
-                            .ToList();
+        return hubs.Select(static h => new LearningHubSummary(h.Id, h.Name, h.Category, h.Status))
+                   .ToList();
 
-        return ValueTask.FromResult<Result<IReadOnlyList<LearningHubSummary>>>(summaries);
     }
 }
