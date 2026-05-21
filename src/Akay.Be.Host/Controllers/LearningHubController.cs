@@ -1,18 +1,18 @@
 using System.Diagnostics.CodeAnalysis;
 using Akay.Be.Application.Features.LearningHubs;
+using Akay.Be.Application.Features.LearningHubs.HttpExamples;
 using Akay.To.Core.Host.Abstractions.Mediator;
 using Akay.To.Core.Host.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-
 namespace Akay.Be.Host.Controllers;
 
 [SuppressMessage(
     "SonarAnalyzer.CSharp",
     "S6960:Controllers should not have too many responsibilities",
-    Justification = "Controller de pruebas para demostrar dispatcher s�ncrono y streaming en un �nico lugar.")]
+    Justification = "Controller de pruebas para demostrar dispatcher síncrono y streaming en un único lugar.")]
 [ApiController]
 [Route("api/learning-hubs")]
 public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatcher streamDispatcher) : ControllerBase
@@ -58,14 +58,27 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
         return (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/learning-hubs/{value.Id}");
     }
 
-
     [HttpPut("{id:int}")]
     public async Task<IResult> Update(int id, [FromBody] UpdateLearningHubRequest request, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new UpdateLearningHubCommand(id, request), cancellationToken)).ToNoContent();
 
-
     [HttpDelete("{id:int}")]
     public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DeleteLearningHubCommand(id), cancellationToken)).ToNoContent();
-    
+
+    [HttpGet("posts")]
+    public async Task<IResult> GetExternalPosts(CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetPostsQuery(), cancellationToken)).ToOk();
+
+    [HttpGet("posts/{postId:int}")]
+    public async Task<IResult> GetExternalPostById(int postId, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetPostByIdQuery(postId), cancellationToken)).ToOk();
+
+    [HttpPost("posts")]
+    public async Task<IResult> CreateExternalPost([FromBody] CreatePostCommand command, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/learning-hubs/jsonplaceholder/posts/{value.Id}");
+
+    [HttpPut("posts/{postId:int}")]
+    public async Task<IResult> UpdateExternalPost(int postId, [FromBody] UpdatePostCommand command, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command with { PostId = postId }, cancellationToken)).ToOk();
 }

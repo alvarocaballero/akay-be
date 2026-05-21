@@ -19,7 +19,8 @@ public static class InfrastructureRegisterModule
         //Base
         services
             .AddCache(settings)
-            .AddBlobStorage(settings);
+            .AddBlobStorage(settings)
+            .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version);
 
         services
             .AddServices()
