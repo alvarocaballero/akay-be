@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Akay.Be.Application.Features.LearningHubs;
 using Akay.Be.Application.Features.LearningHubs.HttpExamples;
+using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Host.Abstractions.Mediator;
 using Akay.To.Core.Host.Results;
 using Microsoft.AspNetCore.Authorization;
@@ -21,6 +22,27 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
     [EnableRateLimiting("writer-rate-limit")]
     public async Task<IResult> GetAll([FromQuery] string? category, [FromQuery] string? status, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetLearningHubsQuery(category, status), cancellationToken)).ToOk();
+
+    /// <summary>
+    /// Traduce el texto de introduccion a la economia a ingles y frances via Azure Cognitive Translator.
+    /// </summary>
+    [HttpGet("economics/translate")]
+    public async Task<IResult> TranslateEconomics(CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new TranslateEconomicsTextQuery(), cancellationToken)).ToOk();
+
+    /// <summary>
+    /// Genera audio TTS a partir del texto de introduccion a la economia y lo transmite como audio/wav.
+    /// </summary>
+    [HttpGet("economics/speech")]
+    public async Task SpeechEconomics(CancellationToken cancellationToken)
+    {
+        HttpContext.Response.ContentType = "audio/wav";
+        await foreach (var chunk in streamDispatcher.Stream(new SpeechEconomicsTextRequest(), cancellationToken))
+        {
+            await HttpContext.Response.Body.WriteAsync(chunk, cancellationToken);
+            await HttpContext.Response.Body.FlushAsync(cancellationToken);
+        }
+    }
 
     [HttpGet("{id:int}")]
     public async Task<IResult> GetById(int id, CancellationToken cancellationToken) =>
