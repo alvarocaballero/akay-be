@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="Akay.To.Core" />
+    <PackageReference Include="Akay.To.Azure" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />

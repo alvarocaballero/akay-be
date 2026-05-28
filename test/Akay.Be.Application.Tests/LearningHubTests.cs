@@ -1,14 +1,19 @@
 using Akay.Be.Application.Features.LearningHubs;
-using Akay.To.Core.Application.ApplicationSettings;
+using Akay.Be.Application.Features.LearningHubs.Responses;
+using Akay.To.Core.Application.Abstractions.BlobStorage;
+using Akay.To.Core.Application.Contexts;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
-using Microsoft.Extensions.Options;
+using Moq;
 
 namespace Akay.Be.Application.Tests;
 
 public sealed class CreateLearningHubCommandValidatorTests
 {
     private readonly CreateLearningHubCommandValidator _validator = new();
+
+    private static CreateLearningHubCommand CreateCommand(string name, string desc, string addr, string cat) =>
+        new(name, desc, addr, cat, Stream.Null, "test.txt", "text/plain");
 
     [Theory]
     [InlineData("", "Desc", "Addr", "Cat")]
@@ -17,7 +22,7 @@ public sealed class CreateLearningHubCommandValidatorTests
     [InlineData("Name", "Desc", "Addr", "")]
     public void Should_Fail_When_Field_Empty(string name, string desc, string addr, string cat)
     {
-        var command = new CreateLearningHubCommand(name, desc, addr, cat);
+        var command = CreateCommand(name, desc, addr, cat);
 
         var result = _validator.Validate(command);
 
@@ -27,7 +32,7 @@ public sealed class CreateLearningHubCommandValidatorTests
     [Fact]
     public void Should_Fail_When_Name_Exceeds_MaxLength()
     {
-        var command = new CreateLearningHubCommand(new string('A', 101), "Desc", "Addr", "Cat");
+        var command = CreateCommand(new string('A', 101), "Desc", "Addr", "Cat");
 
         var result = _validator.Validate(command);
 
@@ -38,7 +43,7 @@ public sealed class CreateLearningHubCommandValidatorTests
     [Fact]
     public void Should_Fail_When_Description_Exceeds_MaxLength()
     {
-        var command = new CreateLearningHubCommand("Name", new string('A', 501), "Addr", "Cat");
+        var command = CreateCommand("Name", new string('A', 501), "Addr", "Cat");
 
         var result = _validator.Validate(command);
 
@@ -49,7 +54,7 @@ public sealed class CreateLearningHubCommandValidatorTests
     [Fact]
     public void Should_Fail_When_Address_Exceeds_MaxLength()
     {
-        var command = new CreateLearningHubCommand("Name", "Desc", new string('A', 201), "Cat");
+        var command = CreateCommand("Name", "Desc", new string('A', 201), "Cat");
 
         var result = _validator.Validate(command);
 
@@ -60,7 +65,7 @@ public sealed class CreateLearningHubCommandValidatorTests
     [Fact]
     public void Should_Fail_When_Category_Exceeds_MaxLength()
     {
-        var command = new CreateLearningHubCommand("Name", "Desc", "Addr", new string('A', 51));
+        var command = CreateCommand("Name", "Desc", "Addr", new string('A', 51));
 
         var result = _validator.Validate(command);
 
@@ -68,10 +73,22 @@ public sealed class CreateLearningHubCommandValidatorTests
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateLearningHubCommand.Category));
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(4)]
+    public void Should_Fail_When_FailedAttempts_OutOfRange(int failedAttempts)
+    {
+        var command = CreateCommand("Name", "Desc", "Addr", "Cat") with { FailedAttempts = failedAttempts };
+
+        var result = _validator.Validate(command);
+
+        Assert.False(result.IsValid);
+    }
+
     [Fact]
     public void Should_Pass_With_Valid_Data()
     {
-        var command = new CreateLearningHubCommand("Academia Test", "Descripcion valida", "Calle Falsa 123", "Ciencias");
+        var command = CreateCommand("Academia Test", "Descripcion valida", "Calle Falsa 123", "Ciencias");
 
         var result = _validator.Validate(command);
 
@@ -233,22 +250,32 @@ public sealed class GetLearningHubQueryHandlerTests
 
 public sealed class CreateLearningHubCommandHandlerTests
 {
+    private readonly Mock<ICompensationContext> _mockCompensations = new();
+    private readonly Mock<IBlobStorageServiceFactory> _mockBlobFactory = new();
+    private readonly Mock<IBlobStorageService> _mockBlob = new();
     private readonly CreateLearningHubCommandHandler _handler;
 
     public CreateLearningHubCommandHandlerTests()
     {
         LearningHubStore.Reset();
-        var settings = Options.Create(new ApplicationSettings
-        {
-            Application = new ApplicationInfo { Name = "TestApp", Version = new Version(1, 0, 0) }
-        });
-        _handler = new CreateLearningHubCommandHandler(settings);
+        CreateLearningHubCommandHandler.NotificationAttemptTracker.Reset();
+
+        _mockBlobFactory
+            .Setup(f => f.CreateAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockBlob.Object);
+
+        _mockBlob
+            .Setup(b => b.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("http://localhost/devstoreaccount1/container/blob");
+
+        _handler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockBlobFactory.Object);
     }
 
     [Fact]
     public async Task Should_Create_Hub_When_Valid()
     {
-        var command = new CreateLearningHubCommand("Nuevo Centro", "Descripcion nueva", "Calle Nueva 1", "Tecnologia");
+        var command = new CreateLearningHubCommand("Nuevo Centro", "Descripcion nueva", "Calle Nueva 1", "Tecnologia",
+            Stream.Null, "test.txt", "text/plain");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -261,12 +288,27 @@ public sealed class CreateLearningHubCommandHandlerTests
     [Fact]
     public async Task Should_Return_Conflict_When_Duplicate_Name()
     {
-        var command = new CreateLearningHubCommand("Academia Newton", "Dup", "Addr", "Cat");
+        var command = new CreateLearningHubCommand("Academia Newton", "Dup", "Addr", "Cat",
+            Stream.Null, "test.txt", "text/plain");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
+    }
+
+    [Fact]
+    public async Task Should_Retry_And_Succeed_When_FailedAttempts_Set()
+    {
+        CreateLearningHubCommandHandler.NotificationAttemptTracker.Reset();
+
+        var command = new CreateLearningHubCommand("Centro Retry", "Desc", "Addr", "Cat",
+            Stream.Null, "test.txt", "text/plain", FailedAttempts: 0);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Centro Retry", result.Value!.Name);
     }
 }
 
@@ -307,20 +349,32 @@ public sealed class UpdateLearningHubCommandHandlerTests
 
 public sealed class DeleteLearningHubCommandHandlerTests
 {
+    private readonly Mock<ICompensationContext> _mockCompensations = new();
+    private readonly Mock<IBlobStorageServiceFactory> _mockBlobFactory = new();
+    private readonly Mock<IBlobStorageService> _mockBlob = new();
     private readonly DeleteLearningHubCommandHandler _handler = new();
 
     public DeleteLearningHubCommandHandlerTests()
     {
         LearningHubStore.Reset();
+        CreateLearningHubCommandHandler.NotificationAttemptTracker.Reset();
+
+        _mockBlobFactory
+            .Setup(f => f.CreateAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockBlob.Object);
+
+        _mockBlob
+            .Setup(b => b.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("http://localhost/devstoreaccount1/container/blob");
     }
 
     [Fact]
     public async Task Should_Delete_Hub_When_Exists()
     {
-        var createHandler = new CreateLearningHubCommandHandler(
-            Options.Create(new ApplicationSettings { Application = new ApplicationInfo { Name = "Test", Version = new Version(1, 0, 0) } }));
+        var createHandler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockBlobFactory.Object);
         var created = await createHandler.Handle(
-            new CreateLearningHubCommand("To Delete", "Desc", "Addr", "Cat"), CancellationToken.None);
+            new CreateLearningHubCommand("To Delete", "Desc", "Addr", "Cat",
+                Stream.Null, "test.txt", "text/plain"), CancellationToken.None);
 
         var command = new DeleteLearningHubCommand(created.Value!.Id);
 

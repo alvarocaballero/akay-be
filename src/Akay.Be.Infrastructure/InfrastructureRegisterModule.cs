@@ -1,6 +1,7 @@
 ﻿using Akay.Be.Application;
-using Microsoft.Extensions.DependencyInjection;
+using Akay.To.Azure.Infrastructure.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
 
@@ -17,7 +18,11 @@ public static class InfrastructureRegisterModule
 
         //Base
         services
-            .AddCache(settings);
+            .AddCache(settings?.CacheSettings)
+            .AddAzureBlobStorage(settings?.AzureStorageSettings)
+            .AddAzureCognitiveSpeechServices()
+            .AddAzureCognitiveTranslatorServices()
+            .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version);
 
         services
             .AddServices()

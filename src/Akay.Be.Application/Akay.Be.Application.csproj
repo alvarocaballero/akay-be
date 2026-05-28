@@ -16,8 +16,4 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Akay.Be.Application.Tests" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Features\LearningHubs\" />
-  </ItemGroup>
 </Project>

@@ -51,9 +51,103 @@ public interface IHybridCacheService
 
 Implementación que envuelve `Microsoft.Extensions.Caching.Hybrid.HybridCache`:
 
-- **`GetOrCreateAsync`:** llama a `HybridCache.GetOrCreateAsync()` con `HybridCacheEntryOptions` opcionales para expiración. Si no se especifica expiración, usa los defaults configurados.
-- **`GetAsync`:** implementa un lookup sin factory usando un truco: crea una entrada con `CacheEntry<TValue>.Miss` y expiración de 1ms. Si la clave existe, `HybridCache` devuelve el valor real ignorando la factory. Si no existe, devuelve `CacheLookup<TValue>(false, default)`.
-- **`SetAsync`:** envuelve el valor en `CacheEntry<TValue>.ForValue(value)` y llama a `HybridCache.SetAsync()`.
+```csharp
+public sealed class HybridCacheService(HybridCache cache) : IHybridCacheService
+{
+    private sealed class CacheEntry<TValue>
+    {
+        public bool Found { get; init; }
+        public TValue? Value { get; init; }
+
+        public static CacheEntry<TValue> Miss { get; } = new();
+        public static CacheEntry<TValue> ForValue(TValue value) =>
+            new() { Found = true, Value = value };
+
+        public static readonly HybridCacheEntryOptions Options = new()
+        {
+            Expiration = TimeSpan.FromMilliseconds(1),
+            LocalCacheExpiration = TimeSpan.FromMilliseconds(1)
+        };
+    }
+    // ...
+}
+```
+
+#### GetOrCreateAsync
+
+```csharp
+public ValueTask<TValue> GetOrCreateAsync<TValue>(
+    string key, Func<CancellationToken, ValueTask<TValue>> factory,
+    TimeSpan? expiration = null, CancellationToken cancellationToken = default)
+{
+    var options = expiration is null ? null : new HybridCacheEntryOptions
+    {
+        Expiration = expiration,
+        LocalCacheExpiration = expiration
+    };
+    return cache.GetOrCreateAsync(key, factory, options, tags: null, cancellationToken);
+}
+```
+
+Flujo:
+1. `HybridCache` busca en L1 (memoria). Si encuentra → retorna.
+2. Si no está en L1, busca en L2 (Redis). Si encuentra → carga en L1 y retorna.
+3. Si no está en ninguna, ejecuta la `factory`, almacena en L1 y L2, retorna.
+4. Si se pasa `expiration`, se aplica el mismo valor a L1 y L2.
+
+#### GetAsync
+
+```csharp
+public async ValueTask<CacheLookup<TValue>> GetAsync<TValue>(
+    string key, CancellationToken cancellationToken = default)
+{
+    var envelope = await cache.GetOrCreateAsync(key,
+        static _ => ValueTask.FromResult(CacheEntry<TValue>.Miss),
+        CacheEntry<TValue>.Options, tags: null, cancellationToken).ConfigureAwait(false);
+
+    return envelope.Found
+        ? new CacheLookup<TValue>(true, envelope.Value)
+        : new CacheLookup<TValue>(false, default);
+}
+```
+
+**Truco de implementación:** `GetAsync` no tiene un método nativo en `HybridCache` para "solo leer". Para simularlo:
+
+1. Llama a `GetOrCreateAsync` con una factory que devuelve `CacheEntry<TValue>.Miss` (marcador de "no encontrado").
+2. La expiración es de 1 ms (`CacheEntry<TValue>.Options`), para que el marcador no contamine la caché.
+3. Si la clave **existe**, `HybridCache` devuelve el valor real ignorando la factory.
+4. Si la clave **no existe**, `HybridCache` ejecuta la factory y devuelve `Miss`.
+
+Esto funciona porque `HybridCache.GetOrCreateAsync` siempre intenta leer antes de ejecutar la factory.
+
+#### SetAsync
+
+```csharp
+public ValueTask SetAsync<TValue>(
+    string key, TValue value, TimeSpan? expiration,
+    CancellationToken cancellationToken = default)
+{
+    var options = expiration is null ? null : new HybridCacheEntryOptions
+    {
+        Expiration = expiration,
+        LocalCacheExpiration = expiration
+    };
+    return cache.SetAsync(key, CacheEntry<TValue>.ForValue(value),
+        options, tags: null, cancellationToken);
+}
+```
+
+Envuelve el valor en `CacheEntry<TValue>.ForValue(value)` (con `Found = true`) y lo almacena.
+
+#### API completa
+
+| Método | Uso | Expiración |
+|---|---|---|
+| `GetOrCreateAsync` | Leer de caché, con factory como fallback | Opcional; si no se pasa, usa defaults de `HybridCache` |
+| `GetAsync` | Solo leer (sin factory). Retorna `CacheLookup<T>.Found` | N/A |
+| `SetAsync` | Escribir en caché | Opcional; si no se pasa, usa defaults de `HybridCache` |
+
+`CacheLookup<T>` es un `record struct` inmutable con `Found` y `Value`.
 
 ### ICacheable / ICacheable\<T\>
 
@@ -322,4 +416,38 @@ var check = new CacheHealthCheck(mockCache.Object);
 var result = await check.CheckHealthAsync(new HealthCheckContext());
 
 Assert.Equal(HealthStatus.Healthy, result.Status);
+```
+
+### Implementación en memoria para tests (sin Redis)
+
+```csharp
+private sealed class MemoryApplicationCache : IHybridCacheService
+{
+    private readonly Dictionary<string, object?> _values = [];
+
+    public async ValueTask<TValue> GetOrCreateAsync<TValue>(
+        string key, Func<CancellationToken, ValueTask<TValue>> factory,
+        TimeSpan? expiration = null, CancellationToken ct = default)
+    {
+        if (_values.TryGetValue(key, out var value))
+            return (TValue)value!;
+
+        var created = await factory(ct);
+        _values[key] = created;
+        return created;
+    }
+
+    public ValueTask<CacheLookup<TValue>> GetAsync<TValue>(
+        string key, CancellationToken ct = default) =>
+        ValueTask.FromResult(_values.TryGetValue(key, out var value)
+            ? new CacheLookup<TValue>(true, (TValue?)value)
+            : new CacheLookup<TValue>(false, default));
+
+    public ValueTask SetAsync<TValue>(
+        string key, TValue value, TimeSpan? expiration, CancellationToken ct = default)
+    {
+        _values[key] = value;
+        return ValueTask.CompletedTask;
+    }
+}
 ```

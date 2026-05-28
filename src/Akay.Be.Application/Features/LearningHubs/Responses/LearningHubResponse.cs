@@ -1,0 +1,10 @@
+﻿namespace Akay.Be.Application.Features.LearningHubs.Responses;
+
+public sealed record LearningHubResponse(int Id,
+                                         string Name,
+                                         string Description,
+                                         string Address,
+                                         string Category,
+                                         string Status,
+                                         DateTime CreatedAt,
+                                         DateTime UpdatedAt);

@@ -25,6 +25,5 @@
 
   <ItemGroup>
     <PackageReference Include="Akay.To.Azure" />
-    <PackageReference Include="Akay.To.Core" />
   </ItemGroup>
 </Project>
