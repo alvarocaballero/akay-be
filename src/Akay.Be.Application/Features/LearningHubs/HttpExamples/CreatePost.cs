@@ -1,3 +1,4 @@
+using Akay.Be.Application.Definitions;
 using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
@@ -16,7 +17,7 @@ internal sealed class CreatePostHandler(IHttpClientFactory httpClientFactory) : 
 {
     public async ValueTask<Result<PostResponse>> Handle(CreatePostCommand request, CancellationToken cancellationToken)
     {
-        var client = httpClientFactory.CreateClient("JsonPlaceholder");
+        var client = httpClientFactory.CreateClient(HttpClientNames.JsonPlaceholder);
 
         var result = await client.PostJsonAsync<PostResponse, CreatePostCommand>(
             "posts", request, cancellationToken);

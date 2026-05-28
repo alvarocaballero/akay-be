@@ -74,4 +74,30 @@ public sealed class ArchitectureTests
             Assert.False(hasPublicConstructor, $"{entityType.FullName} has a public constructor.");
         }
     }
+
+    [Fact]
+    public void CreateClient_Must_Use_HttpClientNames_Constants()
+    {
+        var srcDir = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "src"));
+        var violations = new List<string>();
+
+        foreach (var file in Directory.EnumerateFiles(srcDir, "*.cs", SearchOption.AllDirectories))
+        {
+            var fileName = Path.GetFileName(file);
+            if (fileName == "HttpClientNames.cs")
+                continue;
+
+            var lines = File.ReadAllLines(file);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                if (line.Contains("CreateClient(\"", StringComparison.Ordinal) && !line.Contains("HttpClientNames", StringComparison.Ordinal))
+                {
+                    violations.Add($"{file}:{i + 1} -> {line.Trim()}");
+                }
+            }
+        }
+
+        Assert.Empty(violations);
+    }
 }

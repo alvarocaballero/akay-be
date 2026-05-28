@@ -1,3 +1,4 @@
+using Akay.Be.Application.Definitions;
 using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
@@ -16,7 +17,7 @@ internal sealed class GetPostsHandler(IHttpClientFactory httpClientFactory) : IQ
 {
     public async ValueTask<Result<List<PostResponse>>> Handle(GetPostsQuery request, CancellationToken cancellationToken)
     {
-        var client = httpClientFactory.CreateClient("JsonPlaceholder");
+        var client = httpClientFactory.CreateClient(HttpClientNames.JsonPlaceholder);
 
         // GetJsonAsync soporta endpoints relativos: resuelve contra BaseAddress
         var result = await client.GetJsonAsync<List<PostResponse>>("posts", cancellationToken);
