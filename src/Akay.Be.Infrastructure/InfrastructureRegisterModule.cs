@@ -18,10 +18,10 @@ public static class InfrastructureRegisterModule
 
         //Base
         services
-            .AddCache(settings)
-            .AddBlobStorage(settings)
-            .AddCognitiveSpeechServices()
-            .AddCognitiveTranslateServices()
+            .AddCache(settings?.CacheSettings)
+            .AddAzureBlobStorage(settings?.AzureStorageSettings)
+            .AddAzureCognitiveSpeechServices()
+            .AddAzureCognitiveTranslatorServices()
             .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version);
 
         services

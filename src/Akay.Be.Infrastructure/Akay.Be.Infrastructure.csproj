@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+    <PackageReference Include="Akay.To.Azure" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
   </ItemGroup>

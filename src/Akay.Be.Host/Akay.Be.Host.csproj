@@ -15,13 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Docs\Wiki\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akay.To.Azure" />
   </ItemGroup>
 </Project>
