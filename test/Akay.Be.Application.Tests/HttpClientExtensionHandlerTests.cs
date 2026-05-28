@@ -18,17 +18,17 @@ public sealed class HttpClientExtensionHandlerTests
     public HttpClientExtensionHandlerTests()
     {
         _mockFactory
-            .Setup(f => f.CreateClient("jsonplaceholder"))
+            .Setup(f => f.CreateClient("JsonPlaceholder"))
             .Returns(() => new HttpClient(new FakeHttpHandler()));
     }
 
     private void SetupFactoryWithHandler(FakeHttpHandler handler)
     {
         _mockFactory
-            .Setup(f => f.CreateClient("jsonplaceholder"))
+            .Setup(f => f.CreateClient("JsonPlaceholder"))
             .Returns(() => new HttpClient(handler)
             {
-                BaseAddress = new Uri("https://jsonplaceholder.org/")
+                BaseAddress = new Uri("https://JsonPlaceholder.org/")
             });
     }
 
