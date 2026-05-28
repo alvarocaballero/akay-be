@@ -1,3 +1,4 @@
+using Akay.Be.Application.Definitions;
 using Akay.Be.Application.Features.LearningHubs.HttpExamples;
 using Akay.Be.Application.Features.LearningHubs.Responses;
 using Moq;
@@ -18,14 +19,14 @@ public sealed class HttpClientExtensionHandlerTests
     public HttpClientExtensionHandlerTests()
     {
         _mockFactory
-            .Setup(f => f.CreateClient("JsonPlaceholder"))
+            .Setup(f => f.CreateClient(HttpClientNames.JsonPlaceholder))
             .Returns(() => new HttpClient(new FakeHttpHandler()));
     }
 
     private void SetupFactoryWithHandler(FakeHttpHandler handler)
     {
         _mockFactory
-            .Setup(f => f.CreateClient("JsonPlaceholder"))
+            .Setup(f => f.CreateClient(HttpClientNames.JsonPlaceholder))
             .Returns(() => new HttpClient(handler)
             {
                 BaseAddress = new Uri("https://JsonPlaceholder.org/")
