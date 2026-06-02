@@ -1,8 +1,7 @@
-using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 
 public sealed record GetLearningHubQuery(int Id) : IQuery<LearningHubResponse>, ICacheable<LearningHubResponse>
 {

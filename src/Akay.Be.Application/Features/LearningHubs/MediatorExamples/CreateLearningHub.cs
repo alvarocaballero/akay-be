@@ -1,11 +1,10 @@
-using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.BlobStorage;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Contexts;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 
 /// <summary>
 /// Comando que crea un nuevo Learning Hub con sus datos básicos y un archivo asociado.

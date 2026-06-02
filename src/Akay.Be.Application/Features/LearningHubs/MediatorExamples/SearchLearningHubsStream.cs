@@ -1,9 +1,9 @@
 using System.Runtime.CompilerServices;
 using Akay.To.Core.Application.Abstractions.Mediator;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 
-public sealed record SearchLearningHubsStreamRequest(string SearchTerm) : IStreamRequest<LearningHubStreamItem>;
+public sealed record SearchLearningHubsStreamRequest(string SearchTerm) : IStreamQuery<LearningHubStreamItem>;
 
 public sealed record LearningHubStreamItem(int Id, string Name, string Category, string Relevance);
 

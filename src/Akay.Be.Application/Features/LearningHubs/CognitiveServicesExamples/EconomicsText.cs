@@ -1,4 +1,4 @@
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
 
 /// <summary>
 /// Texto de ejemplo (~220 palabras) sobre introduccion a la economia,

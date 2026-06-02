@@ -73,7 +73,6 @@ internal static class HostRegisterModule
     /// Método de configuración
     /// </summary>
     /// <param name="app"></param>
-    /// <param name="env"></param>
     public static WebApplication Configure(this WebApplication app)
     {
         var settings = app.Services.GetRequiredService<IOptions<ApplicationSettings>>();
