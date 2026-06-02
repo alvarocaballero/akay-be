@@ -1,6 +1,5 @@
 using Akay.Be.Application.Features.LearningHubs;
 using Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
-using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.CognitiveServices;
 using Akay.To.Core.Application.Results;
 using Microsoft.Extensions.Logging;
