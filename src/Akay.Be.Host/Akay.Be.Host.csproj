@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
 	<ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
 	<ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
