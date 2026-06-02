@@ -3,26 +3,22 @@ using Akay.To.Core.Application.Abstractions.CognitiveServices;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Microsoft.Extensions.Logging;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
 
 /// <summary>
 /// Genera un stream de audio (TTS) a partir del texto de introduccion a la economia
 /// usando Azure Cognitive Speech. El audio se devuelve en chunks de bytes.
 /// El resultado se cachea en blob storage para evitar regeneracion.
 /// </summary>
-public sealed record SpeechEconomicsTextRequest : IStreamRequest<byte[]>;
+public sealed record SpeechEconomicsTextRequest : IStreamQuery<byte[]>;
 
-internal sealed class SpeechEconomicsTextRequestHandler(
-    ICognitiveSpeechService speechService,
-    ILogger<SpeechEconomicsTextRequestHandler> logger)
+internal sealed class SpeechEconomicsTextRequestHandler(ICognitiveSpeechService speechService, ILogger<SpeechEconomicsTextRequestHandler> logger)
     : IStreamRequestHandler<SpeechEconomicsTextRequest, byte[]>
 {
     private const string BlobContainer = "economics-audio";
     private const string AudioFileName = "intro-economics";
 
-    public async IAsyncEnumerable<byte[]> Handle(
-        SpeechEconomicsTextRequest request,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<byte[]> Handle(SpeechEconomicsTextRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await foreach (var chunk in speechService.TextToSpeechCacheableStreamAsync(
                            EconomicsText.Content,

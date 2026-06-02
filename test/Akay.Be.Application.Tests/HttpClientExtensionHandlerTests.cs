@@ -1,6 +1,5 @@
 using Akay.Be.Application.Definitions;
 using Akay.Be.Application.Features.LearningHubs.HttpExamples;
-using Akay.Be.Application.Features.LearningHubs.Responses;
 using Moq;
 using System.Net;
 using System.Text;

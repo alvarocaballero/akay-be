@@ -3,7 +3,7 @@ using Akay.To.Core.Application.Abstractions.BlobStorage;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.BlobStorageExamples;
 
 /// <summary>
 /// Query que genera (o recupera desde caché de blob) un badge SVG para un Learning Hub.

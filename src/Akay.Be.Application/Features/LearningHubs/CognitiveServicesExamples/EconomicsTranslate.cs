@@ -1,9 +1,8 @@
-using Akay.Be.Application.Features.LearningHubs.Responses;
 using Akay.To.Core.Application.Abstractions.CognitiveServices;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
 
 /// <summary>
 /// Traduce el texto de introduccion a la economia a ingles y frances
@@ -16,9 +15,7 @@ internal sealed class TranslateEconomicsTextQueryHandler(ICognitiveTranslatorSer
 {
     private static readonly string[] TargetLanguages = ["en", "fr"];
 
-    public async ValueTask<Result<EconomicsTranslationResponse>> Handle(
-        TranslateEconomicsTextQuery query,
-        CancellationToken cancellationToken)
+    public async ValueTask<Result<EconomicsTranslationResponse>> Handle(TranslateEconomicsTextQuery query, CancellationToken cancellationToken)
     {
         var result = await translateService.TranslateTextAsync(
             EconomicsText.Content,

@@ -2,7 +2,7 @@ using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
 
-namespace Akay.Be.Application.Features.LearningHubs;
+namespace Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 
 public sealed record UpdateLearningHubRequest(string Name,
                                               string Description,

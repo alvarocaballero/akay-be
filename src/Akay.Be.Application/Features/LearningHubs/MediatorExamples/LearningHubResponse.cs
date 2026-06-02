@@ -1,4 +1,4 @@
-﻿namespace Akay.Be.Application.Features.LearningHubs.Responses;
+﻿namespace Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 
 public sealed record LearningHubResponse(int Id,
                                          string Name,

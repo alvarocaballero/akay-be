@@ -1,5 +1,5 @@
 using Akay.Be.Application.Features.LearningHubs;
-using Akay.Be.Application.Features.LearningHubs.Responses;
+using Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 using Akay.To.Core.Application.Abstractions.BlobStorage;
 using Akay.To.Core.Application.Contexts;
 using Akay.To.Core.Application.Results;

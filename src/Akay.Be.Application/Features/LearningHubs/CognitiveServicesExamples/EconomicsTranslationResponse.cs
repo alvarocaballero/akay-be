@@ -1,4 +1,4 @@
-namespace Akay.Be.Application.Features.LearningHubs.Responses;
+namespace Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
 
 public sealed record EconomicsTranslationResponse(
     string SourceLanguage,
