@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Akay.To.Azure" Version="0.0.12" />
+    <PackageVersion Include="Akay.To.Azure" Version="0.0.13" />
     <PackageVersion Include="Akay.To.Core" Version="0.0.17" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
