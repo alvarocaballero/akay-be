@@ -3,6 +3,7 @@ using Akay.Be.Application.Features.LearningHubs.BlobStorageExamples;
 using Akay.Be.Application.Features.LearningHubs.CognitiveServicesExamples;
 using Akay.Be.Application.Features.LearningHubs.HttpExamples;
 using Akay.Be.Application.Features.LearningHubs.MediatorExamples;
+using Akay.Be.Application.Features.LearningHubs.SignalRExample;
 using Akay.Be.Application.Features.LearningHubs.TableStorageExamples;
 using Akay.To.Core.Host.Abstractions.Mediator;
 using Akay.To.Core.Host.Results;
@@ -220,6 +221,15 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
         var query = new GetLearningHubMetadataQuery(id, pageSize, continuationToken);
         return (await dispatcher.Send(query, cancellationToken)).ToOk();
     }
+
+
+    /// <summary>
+    /// Recupera auditorias de un Learning Hub desde Table Storage.
+    /// Demuestra <c>GetObjectsByPartitionKeyAsync</c> sobre MemoArray.
+    /// </summary>
+    [HttpGet("{id:int}/send-signalr")]
+    public async Task<IResult> GetDemoSignalR(int id, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new DemoSignalRSendCommand(id), cancellationToken)).ToAccepted("");
 }
 
 /// <summary>

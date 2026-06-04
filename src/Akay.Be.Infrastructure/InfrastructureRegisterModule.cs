@@ -1,6 +1,10 @@
 ﻿using Akay.Be.Application;
+using Akay.Be.Application.Abstractions.Services;
+using Akay.Be.Infrastructure.Services;
+using Akay.Be.Infrastructure.SignalRHubs;
 using Akay.To.Azure.Infrastructure.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
@@ -21,6 +25,7 @@ public static class InfrastructureRegisterModule
             .AddCache(settings?.CacheSettings)
             .AddAzureBlobStorage(settings?.AzureStorageSettings)
             .AddTableStorage(settings?.AzureStorageSettings)
+            .AddSignalR(settings?.AzureSignalRSettings)
             .AddAzureCognitiveSpeechServices()
             .AddAzureCognitiveTranslatorServices()
             .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version);
@@ -32,10 +37,19 @@ public static class InfrastructureRegisterModule
         return services;
     }
 
+    public static WebApplication AddHubs(this WebApplication app)
+    {
+        app.MapHub<DemoSignalRHub>("/hub/demosignalrhub")
+           .RequireCors("AllowSpecificOrigins");
+
+        return app;
+    }
+
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
-        return services;
+        return services
+            .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>();
     }
     private static IServiceCollection AddRepositories(this IServiceCollection services)
     {
