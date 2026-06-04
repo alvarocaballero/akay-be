@@ -8,6 +8,5 @@ public class ApplicationSettingsValidator : BaseApplicationSettingsValidator<App
     public ApplicationSettingsValidator()
     {
         // Reglas específicas de Akay.Be
-        ////RuleFor(x => x.AllowedHosts).NotEmpty();
     }
 }

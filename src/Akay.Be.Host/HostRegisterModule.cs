@@ -1,4 +1,5 @@
-﻿using Akay.Be.Application;
+﻿using System.Globalization;
+using Akay.Be.Application;
 using Akay.Be.Infrastructure;
 using Akay.To.Azure.Host;
 using Akay.To.Core.Application.Abstractions.Contexts;
@@ -37,7 +38,7 @@ internal static class HostRegisterModule
         builder.Services.AddHttpInfrastructure(settings?.CorrelationHeader)
                         .AddHttpApi()
                         .AddExceptionHandlerProblemDetails()
-                        .AddCorsOptions(settings?.AllowedHosts)
+                        .AddCorsOptions(settings?.CorsAllowedOrigins)
                         .AddCultureInfo(settings?.CultureInfo)
                         .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
                         .AddOpenApi(settings?.Application, settings?.SecuritySettings)
@@ -58,7 +59,7 @@ internal static class HostRegisterModule
                                     var isWriter = userContext.Roles.Any(r =>
                                         string.Equals(r, "writer", StringComparison.OrdinalIgnoreCase));
                                     return isWriter
-                                        ? userContext.UserId.ToString()
+                                        ? userContext.UserId.ToString(CultureInfo.InvariantCulture)
                                         : $"no-writer-{Guid.NewGuid():N}";
                                 }
                             }
@@ -91,6 +92,7 @@ internal static class HostRegisterModule
            .UseRateLimiter();
 
         app.UseHealthChecksEndpoint("/health")
+           .AddHubs()
            .MapControllers();
 
         return app;

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akay SignalR — Test</title>
+<style>
+  :root {
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Code', monospace;
+    --radius: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #0b0f19;
+    --card: #131a2b;
+    --card-hover: #182032;
+    --border: #1e2d44;
+    --accent: #6c8cff;
+    --accent-glow: rgba(108,140,255,.28);
+    --green: #30d158;
+    --red: #ff453a;
+    --amber: #ffd60a;
+    --cyan: #5ac8fa;
+    --orange: #ff9f0a;
+    --text: #dce3f5;
+    --muted: #7b89a1;
+    --input-bg: #0d1322;
+    --entry-bg: #0d1322;
+    --btn-sec: #1e2d44;
+    --btn-sec-hover: #25334a;
+    --tab-bg: #0d1322;
+    --tab-active: #1e2d44;
+  }
+  [data-theme="light"] {
+    --bg: #f4f6fa;
+    --card: #fff;
+    --card-hover: #f0f2f8;
+    --border: #d4d8e2;
+    --accent: #4f6ef6;
+    --accent-glow: rgba(79,110,246,.22);
+    --green: #1a8d3f;
+    --red: #d32f2f;
+    --amber: #c47f00;
+    --cyan: #0a84c1;
+    --orange: #d67f00;
+    --text: #1c2135;
+    --muted: #66708a;
+    --input-bg: #f0f2f8;
+    --entry-bg: #f4f6fa;
+    --btn-sec: #e2e5f0;
+    --btn-sec-hover: #d4d8e2;
+    --tab-bg: #e8eaf0;
+    --tab-active: #d4d8e2;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0 }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 48px;
+    transition: background .3s, color .3s;
+  }
+  main { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 14px }
+  h1 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px }
+  h1 span { color: var(--accent) }
+
+  .top-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+  .span-2 { grid-column: 1 / -1 }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    transition: background .3s, border .3s;
+  }
+
+  label {
+    display: block;
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  input, select, button, textarea { font-family: var(--font); font-size: .84rem }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+    transition: border .15s, background .3s, color .3s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent) }
+  input.mono { font-family: var(--mono); font-size: .76rem }
+  select { cursor: pointer }
+  textarea { resize: vertical; min-height: 36px; max-height: 100px }
+
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+  button {
+    border: none; border-radius: 6px; padding: 8px 16px;
+    font-weight: 600; cursor: pointer; transition: .15s; white-space: nowrap;
+  }
+  button:disabled { opacity: .4; cursor: default }
+  .btn-connect { background: var(--accent); color: #fff }
+  .btn-connect:hover:not(:disabled) { box-shadow: 0 0 12px var(--accent-glow) }
+  .btn-stop    { background: var(--red); color: #fff }
+  .btn-send    { background: var(--orange); color: #000; width: 100% }
+  .btn-send:hover:not(:disabled) { filter: brightness(1.15) }
+  .btn-clear   { background: var(--btn-sec); color: var(--text); transition: background .3s, color .3s }
+  .btn-clear:hover:not(:disabled) { background: var(--btn-sec-hover) }
+  .btn-join    { background: var(--green); color: #fff }
+  .btn-leave   { background: var(--amber); color: #000 }
+  .btn-theme   {
+    background: var(--btn-sec); color: var(--text);
+    font-size: 1.1rem; padding: 6px 12px; border-radius: 8px;
+    transition: background .3s, color .3s;
+  }
+  .btn-theme:hover { background: var(--btn-sec-hover) }
+  .btn-stop:hover:not(:disabled), .btn-join:hover:not(:disabled), .btn-leave:hover:not(:disabled) { filter: brightness(1.15) }
+
+  .dot {
+    display: inline-block; width: 9px; height: 9px;
+    border-radius: 50%; margin-right: 6px;
+  }
+  .dot-off   { background: var(--muted) }
+  .dot-on    { background: var(--green); box-shadow: 0 0 8px rgba(48,209,88,.6); animation: pulse 2s infinite }
+  .dot-error { background: var(--red) }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+
+  .status-line { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+
+  .log {
+    max-height: 380px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 8px; padding-right: 4px;
+  }
+  .log::-webkit-scrollbar { width: 5px }
+  .log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px }
+
+  .entry {
+    background: var(--entry-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 13px;
+    font-size: .8rem; animation: slideIn .25s ease;
+    transition: background .3s, border .3s;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px) } }
+  .entry .meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 12px; flex-wrap: wrap }
+  .entry .type {
+    font-weight: 700; font-size: .65rem;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .t-echo  { color: var(--green) }
+  .t-broad { color: var(--accent) }
+  .t-sys   { color: var(--amber) }
+  .t-err   { color: var(--red) }
+  .t-send  { color: var(--orange) }
+  .entry .time { font-size: .63rem; color: var(--muted); font-family: var(--mono) }
+  .entry .name { font-weight: 700; font-size: .78rem; margin-bottom: 6px }
+  .entry pre {
+    background: var(--input-bg);
+    border-radius: 6px;
+    padding: 10px 13px;
+    font-family: var(--mono);
+    font-size: .76rem;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+    margin: 0;
+    transition: background .3s;
+  }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 14px }
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 18px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .2s, border-color .2s;
+    margin-bottom: -1px;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent) }
+  .tab-btn:hover:not(.active) { color: var(--text) }
+
+  .tab-panel { display: none }
+  .tab-panel.active { display: block }
+
+  .field-row { display: flex; gap: 10px; align-items: flex-end }
+  .field-row > * { flex: 1 }
+  .field-row > .flex-2 { flex: 2 }
+
+  .help-text { font-size: .68rem; color: var(--muted); margin-top: 3px }
+
+  .toast {
+    position: fixed; top: 16px; right: 16px;
+    background: var(--card); border: 1px solid var(--red);
+    border-radius: 8px; padding: 10px 16px;
+    font-size: .76rem; max-width: 320px;
+    animation: fadeOut 4s forwards; z-index: 10;
+    transition: background .3s, border .3s;
+  }
+  @keyframes fadeOut { 0%,70% { opacity:1; transform:translateY(0) } 100% { opacity:0; transform:translateY(-12px) } }
+</style>
+</head>
+<body>
+<main>
+
+<div class="top-row">
+  <h1>&#x25B6; <span>Akay</span> SignalR Test</h1>
+  <button id="btnTheme" class="btn-theme" title="Cambiar tema">&#x263E;</button>
+</div>
+
+<div class="card">
+  <div class="grid">
+    <div>
+      <label>API Base URL</label>
+      <input id="apiUrl" value="http://localhost:5246" placeholder="http://localhost:5246" autocomplete="off">
+    </div>
+    <div>
+      <label>Hub Path</label>
+      <input id="hubPath" value="/hub/demosignalrhub" placeholder="/hub/demosignalrhub" autocomplete="off">
+    </div>
+    <div class="span-2">
+      <label>JWT Token</label>
+      <input id="token" class="mono" type="password" placeholder="eyJ...">
+    </div>
+    <div class="span-2 bar">
+      <button id="btnConnect" class="btn-connect">&#x25B6; Conectar</button>
+      <button id="btnStop"    class="btn-stop" disabled>&#x25A0; Desconectar</button>
+      <button id="btnClear"   class="btn-clear">Limpiar</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="status-line">
+    <span id="dot" class="dot dot-off"></span>
+    <span id="status">Desconectado</span>
+    <span id="autoGroup" style="display:none;font-size:.74rem"></span>
+    <span id="groupId" style="display:none;font-size:.74rem;color:var(--green)"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="recv">&#x25C0; Recepcion</button>
+    <button class="tab-btn" data-tab="send">&#x25B6; Envio</button>
+  </div>
+
+  <div id="tab-recv" class="tab-panel active">
+    <div class="grid">
+      <div>
+        <label>Escuchar eventos</label>
+        <select id="eventFilter">
+          <option value="echo" selected>echo (usuario + grupo)</option>
+          <option value="broadcast">broadcastMessage (difusion)</option>
+          <option value="all">echo + broadcastMessage (todo)</option>
+        </select>
+      </div>
+      <div>
+        <label>Grupo (join/leave)</label>
+        <input id="groupName" placeholder="DemoGroup" autocomplete="off">
+      </div>
+      <div class="span-2 bar">
+        <button id="btnJoin"  class="btn-join" disabled>Entrar grupo</button>
+        <button id="btnLeave" class="btn-leave" disabled>Salir grupo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-send" class="tab-panel">
+    <div class="grid">
+      <div>
+        <label>Metodo</label>
+        <select id="sendMethod">
+          <option value="SendToAll" selected>SendToAll — difusion a todos</option>
+          <option value="SendToUser">SendToUser — a un usuario</option>
+          <option value="SendToUsers">SendToUsers — a varios usuarios</option>
+          <option value="SendToGroup">SendToGroup — a un grupo</option>
+          <option value="SendToGroups">SendToGroups — a varios grupos</option>
+          <option value="SendToGroupExcept">SendToGroupExcept — grupo excepto conexiones</option>
+          <option value="SendToCaller">SendToCaller — eco al caller</option>
+          <option value="SendToOthers">SendToOthers — a todos menos yo</option>
+          <option value="SendToOthersInGroup">SendToOthersInGroup — grupo menos yo</option>
+        </select>
+      </div>
+      <div id="sendFieldContainer"></div>
+      <div id="sendExtraField" class="span-2" style="display:none">
+        <label id="sendExtraLabel">IDs (separados por coma)</label>
+        <textarea id="sendExtra" rows="2" placeholder="id1, id2, ..."></textarea>
+      </div>
+      <div class="span-2">
+        <label>Mensaje</label>
+        <input id="sendMessage" placeholder="Hola desde el front!" autocomplete="off">
+      </div>
+      <div class="span-2">
+        <button id="btnSend" class="btn-send" disabled>&#x27A4; Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <label>Mensajes</label>
+  <div id="log" class="log"></div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8/dist/browser/signalr.min.js"></script>
+<script>
+  const $  = id => document.getElementById(id);
+
+  const apiUrl    = $('apiUrl');
+  const hubPath   = $('hubPath');
+  const token     = $('token');
+  const eventFltr = $('eventFilter');
+  const groupName = $('groupName');
+
+  const btnConnect = $('btnConnect');
+  const btnStop    = $('btnStop');
+  const btnJoin    = $('btnJoin');
+  const btnLeave   = $('btnLeave');
+  const btnClear   = $('btnClear');
+  const btnTheme   = $('btnTheme');
+  const btnSend    = $('btnSend');
+
+  const sendMethod = $('sendMethod');
+  const sendFieldContainer = $('sendFieldContainer');
+  const sendExtraField = $('sendExtraField');
+  const sendExtraLabel = $('sendExtraLabel');
+  const sendExtra  = $('sendExtra');
+  const sendMessage = $('sendMessage');
+
+  const dot     = $('dot');
+  const status  = $('status');
+  const autoGrp = $('autoGroup');
+  const groupId = $('groupId');
+  const log     = $('log');
+
+  let connection = null;
+  let inGroup  = false;
+
+  function ts() { return new Date().toLocaleTimeString('es-ES', { hour12: false }) }
+
+  function updateGroupButtons() {
+    btnJoin.disabled  = !connection || inGroup;
+    btnLeave.disabled = !connection || !inGroup;
+  }
+
+  function add(cls, name, body) {
+    const d = document.createElement('div');
+    d.className = 'entry';
+    const inner = body != null
+      ? `<div class="meta"><span class="type ${cls}">${cls.replace('t-','')}</span><span class="time">${ts()}</span></div><div class="name">${esc(name)}</div><pre>${esc(body)}</pre>`
+      : `<div class="meta"><span class="type ${cls}">${cls.replace('t-','')}</span><span class="time">${ts()}</span></div><div class="name">${esc(name)}</div>`;
+    d.innerHTML = inner;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  }
+
+  function setUI(connected) {
+    btnConnect.disabled = connected;
+    btnStop.disabled    = !connected;
+    btnSend.disabled    = !connected;
+    updateGroupButtons();
+    if (!connected) {
+      groupId.style.display = 'none'; groupId.textContent = '';
+      autoGrp.style.display = 'none'; autoGrp.textContent = '';
+      inGroup = false;
+    }
+  }
+
+  function setStatus(state) {
+    dot.className = 'dot ' + (state === 'on' ? 'dot-on' : state === 'error' ? 'dot-error' : 'dot-off');
+    status.textContent = state === 'on' ? 'Conectado' : state === 'error' ? 'Error' : 'Desconectado';
+  }
+
+  function registerHandlers() {
+    const filter = eventFltr.value;
+
+    connection.off('echo');
+    connection.off('broadcastMessage');
+
+    if (filter === 'echo' || filter === 'all') {
+      connection.on('echo', (name, msg) => {
+        const payload = msg && typeof msg === 'object' ? JSON.stringify(msg, null, 2) : String(msg ?? '');
+        add('t-echo', name ?? '_SYSTEM_', payload);
+      });
+    }
+
+    if (filter === 'broadcast' || filter === 'all') {
+      connection.on('broadcastMessage', (name, msg) => {
+        const payload = msg && typeof msg === 'object' ? JSON.stringify(msg, null, 2) : String(msg ?? '');
+        add('t-broad', name ?? '_SYSTEM_', payload);
+      });
+    }
+  }
+
+  eventFltr.addEventListener('change', () => {
+    if (connection && connection.state === signalR.HubConnectionState.Connected) {
+      registerHandlers();
+      add('t-sys', `Filtro cambiado a: ${eventFltr.selectedOptions[0].text}`);
+    }
+  });
+
+  async function doConnect() {
+    const base = apiUrl.value.trim().replace(/\/+$/, '');
+    const path = hubPath.value.trim();
+    const jwt  = token.value.trim();
+    if (!base) { toast('Falta API Base URL'); return }
+    if (!path) { toast('Falta Hub Path'); return }
+    if (!jwt)  { toast('Falta JWT Token'); return }
+
+    const full = base + path;
+    add('t-sys', `Conectando a ${full} ...`);
+
+    connection = new signalR.HubConnectionBuilder()
+      .withUrl(full, { accessTokenFactory: () => jwt })
+      .withAutomaticReconnect([0, 2000, 5000, 10000])
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+
+    registerHandlers();
+
+    connection.onreconnecting(err => { add('t-sys', `Reconectando... ${err?.message ?? ''}`); setStatus('error') });
+    connection.onreconnected(id => { add('t-sys', `Reconectado (${id})`); setStatus('on'); setUI(true) });
+    connection.onclose(err => {
+      add('t-sys', `Desconectado${err ? ': ' + (err.message ?? err) : ''}`);
+      setStatus('off'); setUI(false); connection = null;
+    });
+
+    try {
+      await connection.start();
+      setStatus('on'); setUI(true);
+
+      const uid = decodeUserId(jwt);
+      if (uid) {
+        autoGrp.textContent = `| Grupo automatico: user-${uid}`;
+        autoGrp.style.display = 'inline';
+        add('t-sys', `Asignado al grupo automatico: user-${uid}`);
+      }
+
+      add('t-sys', `Conectado. Hub: ${full}`);
+    } catch (err) {
+      setStatus('error');
+      add('t-err', `Fallo conexion: ${err.message ?? err}`);
+      connection = null;
+    }
+  }
+
+  async function doStop() {
+    if (!connection) return;
+    try { await connection.stop() } catch { /* ok */ }
+    connection = null;
+    setStatus('off'); setUI(false);
+    add('t-sys', 'Desconectado manualmente');
+  }
+
+  async function doJoin() {
+    const g = groupName.value.trim();
+    if (!g) { toast('Escribe un nombre de grupo'); return }
+    if (!connection) return;
+    try {
+      await connection.invoke('JoinGroup', g);
+      inGroup = true;
+      updateGroupButtons();
+      groupId.textContent = ` | Grupo: ${esc(g)}`;
+      groupId.style.display = 'inline';
+      add('t-sys', `Entraste al grupo: ${esc(g)}`);
+    } catch (err) {
+      add('t-err', `Error al entrar al grupo: ${err.message ?? err}`);
+    }
+  }
+
+  async function doLeave() {
+    const g = groupName.value.trim();
+    if (!g) { toast('Escribe un nombre de grupo'); return }
+    if (!connection) return;
+    try {
+      await connection.invoke('LeaveGroup', g);
+      inGroup = false;
+      updateGroupButtons();
+      groupId.style.display = 'none';
+      groupId.textContent = '';
+      add('t-sys', `Saliste del grupo: ${esc(g)}`);
+    } catch (err) {
+      add('t-err', `Error al salir del grupo: ${err.message ?? err}`);
+    }
+  }
+
+  function doClear() { log.innerHTML = '' }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+  function decodeUserId(jwt) {
+    try {
+      const parts = jwt.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1]));
+      return payload[Object.keys(payload).find(k =>
+        k.endsWith('nameidentifier') || k === 'sub')] ?? null;
+    } catch { return null }
+  }
+
+  btnConnect.addEventListener('click', doConnect);
+  btnStop.addEventListener('click', doStop);
+  btnJoin.addEventListener('click', doJoin);
+  btnLeave.addEventListener('click', doLeave);
+  btnClear.addEventListener('click', doClear);
+
+  // ── Theme toggle ──
+  const html = document.documentElement;
+  btnTheme.addEventListener('click', () => {
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    btnTheme.innerHTML = next === 'dark' ? '&#x263E;' : '&#x2600;';
+  });
+
+  // ── Tabs ──
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── Send: dynamic fields ──
+  const methodFields = {
+    'SendToAll':          { field: null,   extra: null },
+    'SendToUser':         { field: 'userId', extra: null, fieldLabel: 'User ID' },
+    'SendToUsers':        { field: null,   extra: 'userIds', extraLabel: 'User IDs (separados por coma)' },
+    'SendToGroup':        { field: 'group', extra: null, fieldLabel: 'Nombre del grupo' },
+    'SendToGroups':       { field: null,   extra: 'groupNames', extraLabel: 'Grupos (separados por coma)' },
+    'SendToGroupExcept':  { field: 'group', extra: 'excludedIds', fieldLabel: 'Nombre del grupo', extraLabel: 'IDs de conexion excluidas (separadas por coma)' },
+    'SendToCaller':       { field: null,   extra: null },
+    'SendToOthers':       { field: null,   extra: null },
+    'SendToOthersInGroup':{ field: 'group', extra: null, fieldLabel: 'Nombre del grupo' }
+  };
+
+  function updateSendFields() {
+    const cfg = methodFields[sendMethod.value];
+    if (!cfg) return;
+
+    if (cfg.field) {
+      sendFieldContainer.innerHTML = `<label>${cfg.fieldLabel ?? cfg.field}</label><input id="sendField" placeholder="${cfg.field === 'userId' ? 'user-id' : 'DemoGroup'}" autocomplete="off">`;
+      sendFieldContainer.style.display = '';
+    } else {
+      sendFieldContainer.innerHTML = '';
+      sendFieldContainer.style.display = 'none';
+    }
+
+    if (cfg.extra) {
+      sendExtraLabel.textContent = cfg.extraLabel ?? cfg.extra;
+      sendExtraField.style.display = '';
+    } else {
+      sendExtraField.style.display = 'none';
+    }
+  }
+
+  sendMethod.addEventListener('change', updateSendFields);
+  updateSendFields();
+
+  // ── Send: invoke hub method ──
+  async function doSend() {
+    if (!connection) { toast('No conectado'); return }
+    const method = sendMethod.value;
+    const msg = sendMessage.value.trim();
+    if (!msg) { toast('Escribe un mensaje'); return }
+
+    const getField = () => { const el = $('sendField'); return el ? el.value.trim() : ''; };
+    const getExtra = () => sendExtra.value.trim();
+
+    try {
+      let desc = '';
+      switch (method) {
+        case 'SendToAll':
+          await connection.invoke('SendToAll', msg);
+          desc = `SendToAll → broadcast`;
+          break;
+        case 'SendToUser': {
+          const uid = getField();
+          if (!uid) { toast('Falta User ID'); return }
+          await connection.invoke('SendToUser', uid, msg);
+          desc = `SendToUser → ${uid}`;
+          break;
+        }
+        case 'SendToUsers': {
+          const ids = getExtra().split(/[,;]/).map(s => s.trim()).filter(Boolean);
+          if (!ids.length) { toast('Faltan User IDs'); return }
+          await connection.invoke('SendToUsers', ids, msg);
+          desc = `SendToUsers → ${ids.join(', ')}`;
+          break;
+        }
+        case 'SendToGroup': {
+          const g = getField();
+          if (!g) { toast('Falta nombre de grupo'); return }
+          await connection.invoke('SendToGroup', g, msg);
+          desc = `SendToGroup → ${g}`;
+          break;
+        }
+        case 'SendToGroups': {
+          const groups = getExtra().split(/[,;]/).map(s => s.trim()).filter(Boolean);
+          if (!groups.length) { toast('Faltan grupos'); return }
+          await connection.invoke('SendToGroups', groups, msg);
+          desc = `SendToGroups → ${groups.join(', ')}`;
+          break;
+        }
+        case 'SendToGroupExcept': {
+          const g = getField();
+          const excludes = getExtra().split(/[,;]/).map(s => s.trim()).filter(Boolean);
+          if (!g) { toast('Falta nombre de grupo'); return }
+          await connection.invoke('SendToGroupExcept', g, excludes, msg);
+          desc = `SendToGroupExcept → ${g} (excepto ${excludes.length > 0 ? excludes.join(', ') : 'nadie'})`;
+          break;
+        }
+        case 'SendToCaller':
+          await connection.invoke('SendToCaller', msg);
+          desc = `SendToCaller → eco`;
+          break;
+        case 'SendToOthers':
+          await connection.invoke('SendToOthers', msg);
+          desc = `SendToOthers → todos menos yo`;
+          break;
+        case 'SendToOthersInGroup': {
+          const g = getField();
+          if (!g) { toast('Falta nombre de grupo'); return }
+          await connection.invoke('SendToOthersInGroup', g, msg);
+          desc = `SendToOthersInGroup → ${g}`;
+          break;
+        }
+      }
+      add('t-send', `Enviado: ${desc}`, msg);
+    } catch (err) {
+      add('t-err', `Error enviando ${method}: ${err.message ?? err}`);
+    }
+  }
+
+  btnSend.addEventListener('click', doSend);
+</script>
+</body>
+</html>
