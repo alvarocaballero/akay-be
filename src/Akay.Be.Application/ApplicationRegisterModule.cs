@@ -12,14 +12,17 @@ public static class ApplicationRegisterModule
     /// <returns></returns>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, ApplicationSettings? settings)
     {
+
         services.AddDispatcher(assemblies: typeof(ApplicationRegisterModule).Assembly);
 
+
+        // Configuración con behaviors opcionales
         ////services.AddDispatcher(options =>
         ////{
         ////    options.UseValidationBehavior = false;
         ////    options.UseCacheBehavior = false;
         ////},
-        ////assemblies: typeof(ApplicationRegisterModule).Assembly);
+        ////assemblies: assembly);
 
         services.AddServices();
 
