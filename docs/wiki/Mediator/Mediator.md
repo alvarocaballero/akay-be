@@ -32,6 +32,11 @@ public interface IRequest<out TResponse>;
 public interface ICommand : IRequest<Result>;
 public interface ICommand<TResponse> : IRequest<Result<TResponse>>;
 
+public readonly record struct Unit
+{
+    public static readonly Unit Value = new();
+}
+
 public interface IQuery<TResponse> : IRequest<Result<TResponse>>;
 
 public interface IStreamRequest<TResponse> : IRequest<IAsyncEnumerable<TResponse>>;
@@ -54,6 +59,18 @@ public interface ICommandHandler<in TCommand, TResponse> : IRequestHandler<TComm
 
 public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, Result<TResponse>>
     where TQuery : IQuery<TResponse>;
+```
+
+`Unit` se usa exclusivamente dentro del mediator para expresar respuestas vacias tipadas. Para comandos sin datos de negocio se puede usar `ICommand` si basta con `Result`, o `ICommand<Unit>` si se necesita mantener la forma generica `Result<TResponse>`.
+
+```csharp
+public sealed record DeleteUserCommand(Guid UserId) : ICommand<Unit>;
+
+public sealed class DeleteUserCommandHandler : ICommandHandler<DeleteUserCommand, Unit>
+{
+    public ValueTask<Result<Unit>> Handle(DeleteUserCommand request, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Result<Unit>.Success(Unit.Value));
+}
 ```
 
 ### Dispatcher
@@ -256,6 +273,180 @@ Inyectable en cualquier handler como dependencia scoped. Métodos:
 | `Clear()` | Descarta todas las compensaciones sin ejecutarlas. |
 
 Normalmente no necesitas llamar a `RunAsync` ni `Clear` manualmente; el `CompensationBehavior` lo hace por ti.
+
+---
+
+## Queries paginadas
+
+Para consultas que devuelven listas paginadas, `Akay.To.Core` proporciona dos modelos:
+
+- **Por número de página:** `PagedQuery<TResponse>` + `PagedResponse<TResponse>`
+- **Por continuation token:** `ContinuationTokenQuery<TResponse>` + `ContinuationTokenResponse<TResponse>`
+
+Ambos comparten la interfaz base `IPaginatedQuery<TResponse>` con propiedades comunes (`PageSize`, `SortBy`, `IsAscending`), pero cada uno retorna su tipo de respuesta específico.
+
+### Interfaces
+
+```csharp
+public interface IPaginatedQuery<TResponse>
+{
+    int? PageSize { get; }
+    bool? IsAscending { get; }
+    string? SortBy { get; }
+}
+
+public abstract record PagedQuery<TResponse> : IPaginatedQuery<TResponse>, IQuery<PagedResponse<TResponse>>
+{
+    public int? Page { get; init; } = 1;
+    public int? PageSize { get; init; } = 100;
+    public string? SortBy { get; init; }
+    public bool? IsAscending { get; init; } = true;
+}
+
+public abstract record ContinuationTokenQuery<TResponse> : IPaginatedQuery<TResponse>, IQuery<ContinuationTokenResponse<TResponse>>
+{
+    public string? ContinuationToken { get; init; }
+    public int? PageSize { get; init; } = 100;
+    public string? SortBy { get; init; }
+    public bool? IsAscending { get; init; } = true;
+}
+```
+
+### Respuestas
+
+```csharp
+public sealed class PagedResponse<T>
+{
+    public T Data { get; }
+    public int? PageSize { get; }
+    public bool HasMoreItems { get; }
+    public RecordLinks Links { get; }
+    public int Page { get; }
+    public int? NextPage { get; }
+}
+
+public sealed class ContinuationTokenResponse<T>
+{
+    public T Data { get; }
+    public int? PageSize { get; }
+    public bool HasMoreItems { get; }
+    public RecordLinks Links { get; }
+    public string? ContinuationToken { get; }
+    public string? NextContinuationToken { get; }
+}
+```
+
+### Ejemplo (paginación por página)
+
+```csharp
+public sealed record GetLearningHubsQuery : PagedQuery<List<LearningHubSummary>>
+{
+    public string? Category { get; init; }
+    public string? Status { get; init; }
+}
+
+internal sealed class GetLearningHubsQueryHandler : IQueryHandler<GetLearningHubsQuery, PagedResponse<List<LearningHubSummary>>>
+{
+    public async ValueTask<Result<PagedResponse<List<LearningHubSummary>>>> Handle(
+        GetLearningHubsQuery request, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        IEnumerable<LearningHubData> hubs = LearningHubStore.GetAll();
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+            hubs = hubs.Where(h => string.Equals(h.Category, request.Category, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(request.Status))
+            hubs = hubs.Where(h => string.Equals(h.Status, request.Status, StringComparison.OrdinalIgnoreCase));
+
+        var summaries = hubs.Select(static h => new LearningHubSummary(h.Id, h.Name, h.Category, h.Status));
+
+        summaries = (request.SortBy?.ToLowerInvariant()) switch
+        {
+            "name" => request.IsAscending is not false
+                ? summaries.OrderBy(s => s.Name)
+                : summaries.OrderByDescending(s => s.Name),
+            "category" => request.IsAscending is not false
+                ? summaries.OrderBy(s => s.Category)
+                : summaries.OrderByDescending(s => s.Category),
+            "status" => request.IsAscending is not false
+                ? summaries.OrderBy(s => s.Status)
+                : summaries.OrderByDescending(s => s.Status),
+            _ => request.IsAscending is not false
+                ? summaries.OrderBy(s => s.Id)
+                : summaries.OrderByDescending(s => s.Id)
+        };
+
+        var list = summaries.ToList();
+        var page = request.Page ?? 1;
+        var pageSize = request.PageSize ?? 10;
+        var totalPages = (int)Math.Ceiling(list.Count / (double)pageSize);
+        var hasMoreItems = page < totalPages;
+
+        var pagedData = list
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return PagedResponse<List<LearningHubSummary>>.Create(
+            pagedData, pageSize, page, hasMoreItems);
+    }
+}
+```
+
+**Endpoint:**
+
+```csharp
+[HttpGet]
+public async Task<IResult> GetAll(
+    [FromQuery] string? category,
+    [FromQuery] string? status,
+    [FromQuery] int? pageSize,
+    [FromQuery] int? page,
+    [FromQuery] bool? isAscending,
+    [FromQuery] string? sortBy,
+    CancellationToken cancellationToken) =>
+    (await dispatcher.Send(new GetLearningHubsQuery
+    {
+        Category = category,
+        Status = status,
+        PageSize = pageSize,
+        Page = page,
+        IsAscending = isAscending ?? true,
+        SortBy = sortBy
+    }, cancellationToken)).ToOk();
+```
+
+### Ejemplo (paginación por continuation token)
+
+```csharp
+public sealed record GetLearningHubMetadataQuery(
+    int HubId,
+    int? PageSize = null,
+    string? ContinuationToken = null
+) : ContinuationTokenQuery<Result<(List<LearningHubMetadataRow>, string?)>>;
+
+internal sealed class GetLearningHubMetadataQueryHandler(
+    ITableStorageRepositoryFactory tableFactory)
+    : IQueryHandler<GetLearningHubMetadataQuery, ContinuationTokenResponse<Result<(List<LearningHubMetadataRow>, string?)>>>
+{
+    public async ValueTask<Result<ContinuationTokenResponse<Result<(List<LearningHubMetadataRow>, string?)>>>> Handle(
+        GetLearningHubMetadataQuery request, CancellationToken cancellationToken)
+    {
+        var repo = tableFactory.Create("LearningHubsMetadata");
+        var result = await repo.GetPaginatedEntitiesAsync<LearningHubMetadataRow>(
+            partitionKey: $"hub-{request.HubId}",
+            pageSize: request.PageSize ?? 10,
+            cancellationToken: cancellationToken);
+
+        return result.IsSuccess
+            ? ContinuationTokenResponse<Result<(List<LearningHubMetadataRow>, string?)>>.Create(
+                result.Value, result.Value.PageSize, result.Value.ContinuationToken, result.Value.NextContinuationToken)
+            : result;
+    }
+}
+```
 
 ---
 

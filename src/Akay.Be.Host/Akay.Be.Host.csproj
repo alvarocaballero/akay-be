@@ -7,14 +7,6 @@
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')">
-	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj')">
-	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
-  </ItemGroup>
-
   <ItemGroup>
 	<ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
 	<ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />

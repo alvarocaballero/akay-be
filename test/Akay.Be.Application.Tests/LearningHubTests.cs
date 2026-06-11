@@ -1,7 +1,10 @@
 using Akay.Be.Application.Features.LearningHubs;
 using Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 using Akay.To.Core.Application.Abstractions.BlobStorage;
+using Akay.To.Core.Application.Abstractions.Messaging;
+using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Contexts;
+using Akay.To.Core.Application.Responses;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
 using Moq;
@@ -163,55 +166,69 @@ public sealed class GetLearningHubsQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.NotEmpty(result.Value!);
+        Assert.NotEmpty(result.Value!.Data);
     }
 
     [Fact]
     public async Task Should_Filter_By_Category()
     {
-        var query = new GetLearningHubsQuery(Category: "Ciencias");
+        var query = new GetLearningHubsQuery { Category = "Ciencias" };
 
         var result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.All(result.Value!, h => Assert.Equal("Ciencias", h.Category));
+        Assert.All(result.Value!.Data, h => Assert.Equal("Ciencias", h.Category));
     }
 
     [Fact]
     public async Task Should_Filter_By_Status()
     {
-        var query = new GetLearningHubsQuery(Status: "active");
+        var query = new GetLearningHubsQuery { Status = "active" };
 
         var result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.All(result.Value!, h => Assert.Equal("active", h.Status));
+        Assert.All(result.Value!.Data, h => Assert.Equal("active", h.Status));
     }
 
     [Fact]
     public async Task Should_Return_Empty_When_No_Match()
     {
-        var query = new GetLearningHubsQuery(Category: "NonExistent");
+        var query = new GetLearningHubsQuery { Category = "NonExistent" };
 
         var result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Empty(result.Value!);
+        Assert.Empty(result.Value!.Data);
     }
 
     [Fact]
     public async Task Should_Filter_By_Category_And_Status()
     {
-        var query = new GetLearningHubsQuery(Category: "Idiomas", Status: "active");
+        var query = new GetLearningHubsQuery { Category = "Idiomas", Status = "active" };
 
         var result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.All(result.Value!, h =>
+        Assert.All(result.Value!.Data, h =>
         {
             Assert.Equal("Idiomas", h.Category);
             Assert.Equal("active", h.Status);
         });
+    }
+
+    [Fact]
+    public async Task Should_Return_Paginated_Response()
+    {
+        var query = new GetLearningHubsQuery { PageSize = 2, Page = 1 };
+
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var response = Assert.IsType<PagedResponse<List<LearningHubSummary>>>(result.Value);
+        Assert.Equal(2, response.PageSize);
+        Assert.Equal(1, response.Page);
+        Assert.True(response.HasMoreItems);
     }
 }
 
@@ -251,14 +268,20 @@ public sealed class GetLearningHubQueryHandlerTests
 public sealed class CreateLearningHubCommandHandlerTests
 {
     private readonly Mock<ICompensationContext> _mockCompensations = new();
+    private readonly Mock<IMessageBus> _mockMessageBus = new();
     private readonly Mock<IBlobStorageServiceFactory> _mockBlobFactory = new();
     private readonly Mock<IBlobStorageService> _mockBlob = new();
+    private readonly Mock<IUserContext> _mockUserContext = new();
     private readonly CreateLearningHubCommandHandler _handler;
 
     public CreateLearningHubCommandHandlerTests()
     {
         LearningHubStore.Reset();
         CreateLearningHubCommandHandler.NotificationAttemptTracker.Reset();
+
+        _mockUserContext
+            .SetupGet(u => u.UserId)
+            .Returns(1);
 
         _mockBlobFactory
             .Setup(f => f.CreateAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
@@ -268,7 +291,7 @@ public sealed class CreateLearningHubCommandHandlerTests
             .Setup(b => b.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string?>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("http://localhost/devstoreaccount1/container/blob");
 
-        _handler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockBlobFactory.Object);
+        _handler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockMessageBus.Object, _mockBlobFactory.Object, _mockUserContext.Object);
     }
 
     [Fact]
@@ -350,14 +373,20 @@ public sealed class UpdateLearningHubCommandHandlerTests
 public sealed class DeleteLearningHubCommandHandlerTests
 {
     private readonly Mock<ICompensationContext> _mockCompensations = new();
+    private readonly Mock<IMessageBus> _mockMessageBus = new();
     private readonly Mock<IBlobStorageServiceFactory> _mockBlobFactory = new();
     private readonly Mock<IBlobStorageService> _mockBlob = new();
+    private readonly Mock<IUserContext> _mockUserContext = new();
     private readonly DeleteLearningHubCommandHandler _handler = new();
 
     public DeleteLearningHubCommandHandlerTests()
     {
         LearningHubStore.Reset();
         CreateLearningHubCommandHandler.NotificationAttemptTracker.Reset();
+
+        _mockUserContext
+            .SetupGet(u => u.UserId)
+            .Returns(1);
 
         _mockBlobFactory
             .Setup(f => f.CreateAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
@@ -371,7 +400,7 @@ public sealed class DeleteLearningHubCommandHandlerTests
     [Fact]
     public async Task Should_Delete_Hub_When_Exists()
     {
-        var createHandler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockBlobFactory.Object);
+        var createHandler = new CreateLearningHubCommandHandler(_mockCompensations.Object, _mockMessageBus.Object, _mockBlobFactory.Object, _mockUserContext.Object);
         var created = await createHandler.Handle(
             new CreateLearningHubCommand("To Delete", "Desc", "Addr", "Cat",
                 Stream.Null, "test.txt", "text/plain"), CancellationToken.None);

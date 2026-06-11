@@ -1,4 +1,5 @@
-﻿using Akay.Be.Application;
+﻿using System.Reflection;
+using Akay.Be.Application;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
@@ -24,11 +25,12 @@ public static class InfrastructureRegisterModule
         services
             .AddCache(settings?.CacheSettings)
             .AddAzureBlobStorage(settings?.AzureStorageSettings)
-            .AddTableStorage(settings?.AzureStorageSettings)
+            .AddAzureTableStorage(settings?.AzureStorageSettings)
             .AddSignalR(settings?.AzureSignalRSettings)
             .AddAzureCognitiveSpeechServices()
             .AddAzureCognitiveTranslatorServices()
-            .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version);
+            .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version)
+            .AddRebusMessaging(settings?.MessagingSettings, Assembly.GetEntryAssembly()!);
 
         services
             .AddServices()

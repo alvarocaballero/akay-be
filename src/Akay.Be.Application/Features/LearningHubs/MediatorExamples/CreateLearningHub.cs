@@ -1,5 +1,10 @@
+using System.Diagnostics;
+using System.Globalization;
+using Akay.Be.Application.Features.Messaging;
 using Akay.To.Core.Application.Abstractions.BlobStorage;
+using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Abstractions.Mediator;
+using Akay.To.Core.Application.Abstractions.Messaging;
 using Akay.To.Core.Application.Contexts;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
@@ -41,7 +46,9 @@ public sealed record CreateLearningHubCommand(string Name,
 /// persistencia en memoria, subida de archivo a blob storage y notificación simulada.
 /// </summary>
 internal sealed class CreateLearningHubCommandHandler(ICompensationContext compensations,
-                                                      IBlobStorageServiceFactory blobFactory) : ICommandHandler<CreateLearningHubCommand, LearningHubResponse>
+                                                      IMessageBus messageBus,
+                                                      IBlobStorageServiceFactory blobFactory,
+                                                      IUserContext userContext) : ICommandHandler<CreateLearningHubCommand, LearningHubResponse>
 {
     public async ValueTask<Result<LearningHubResponse>> Handle(CreateLearningHubCommand request, CancellationToken cancellationToken)
     {
@@ -100,6 +107,28 @@ internal sealed class CreateLearningHubCommandHandler(ICompensationContext compe
         // El parámetro FailedAttempts del comando permite forzar N fallos consecutivos antes del éxito.
         TrySendNotification(created, request.FailedAttempts);
 
+        // 9. Publicar evento de creación (simulado con un mensaje en el bus).
+        await messageBus.PublishAsync(new LearningHubCreatedEvent(created.Id, created.Name, created.Description),
+                                      new MessagePublishOptions
+                                      {
+                                          TimeToLive = TimeSpan.FromHours(1),
+                                          Headers = new Dictionary<string, string>
+                                          {
+                                              ["x-correlation-id"] = Activity.Current?.Id ?? "",
+                                              ["x-user-id"] = userContext.UserId.ToString(CultureInfo.InvariantCulture),
+                                          }
+                                      },
+                                      cancellationToken);
+
+        // Otra forma de publicar con opciones es usando un "envelope":
+        ////await messageBus.PublishAsync(new LearningHubCreatedEvent(created.Id, created.Name, created.Description),
+        ////                              new MessagePublishOptions().WithTimeToLive(TimeSpan.FromHours(1))
+        ////                                                         .WithHeader("x-correlation-id", Activity.Current?.Id ?? "")
+        ////                                                         .WithHeader("x-user-id", userContext.UserId.ToString() ?? "anonymous"),
+        ////                              cancellationToken);
+
+
+        // 10. Si todo ha ido bien, se devuelve el resultado exitoso con los datos del hub creado.
         return new LearningHubResponse(created.Id,
                                        created.Name,
                                        created.Description,

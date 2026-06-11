@@ -5,7 +5,9 @@ using Akay.Be.Application.Features.LearningHubs.HttpExamples;
 using Akay.Be.Application.Features.LearningHubs.MediatorExamples;
 using Akay.Be.Application.Features.LearningHubs.SignalRExample;
 using Akay.Be.Application.Features.LearningHubs.TableStorageExamples;
-using Akay.To.Core.Host.Abstractions.Mediator;
+using Akay.Be.Application.Features.Messaging;
+using Akay.To.Core.Application.Abstractions.Mediator;
+using Akay.To.Core.Application.Abstractions.Messaging;
 using Akay.To.Core.Host.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,22 +21,39 @@ namespace Akay.Be.Host.Controllers;
 /// </summary>
 /// <param name="dispatcher"></param>
 /// <param name="streamDispatcher"></param>
+/// <param name="messageBus"></param>
 [SuppressMessage(
     "SonarAnalyzer.CSharp",
     "S6960:Controllers should not have too many responsibilities",
     Justification = "Controller de pruebas para demostrar dispatcher síncrono y streaming en un único lugar.")]
 [ApiController]
 [Route("api/learning-hubs")]
-public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatcher streamDispatcher) : ControllerBase
+public sealed class LearningHubController(IDispatcher dispatcher,
+                                          IStreamDispatcher streamDispatcher,
+                                          IMessageBus messageBus) : ControllerBase
 {
     /// <summary>
-    /// Lista Learning Hubs con filtros opcionales.
-    /// Demuestra <c>IQuery</c> y <c>RateLimit</c>.
+    /// Lista Learning Hubs con filtros opcionales y paginación.
+    /// Demuestra <c>PagedQuery</c> y <c>RateLimit</c>.
     /// </summary>
     [HttpGet]
     [EnableRateLimiting("writer-rate-limit")]
-    public async Task<IResult> GetAll([FromQuery] string? category, [FromQuery] string? status, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetLearningHubsQuery(category, status), cancellationToken)).ToOk();
+    public async Task<IResult> GetAll([FromQuery] string? category,
+                                      [FromQuery] string? status,
+                                      [FromQuery] int? pageSize,
+                                      [FromQuery] int? page,
+                                      [FromQuery] bool? isAscending,
+                                      [FromQuery] string? sortBy,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetLearningHubsQuery
+        {
+            Category = category,
+            Status = status,
+            PageSize = pageSize,
+            Page = page,
+            IsAscending = isAscending,
+            SortBy = sortBy
+        }, cancellationToken)).ToOk();
 
     /// <summary>
     /// Traduce el texto de economia a ingles y frances.
@@ -109,6 +128,17 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
                                                    failedAttempts);
 
         return (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/learning-hubs/{value.Id}");
+    }
+
+    /// <summary>
+    /// Encola la generacion de un informe del Learning Hub.
+    /// Demuestra <c>ICommandMessage</c> y <c>SendAsync</c> sobre Rebus.
+    /// </summary>
+    [HttpPost("{id:int}/generate-report")]
+    public async Task<IResult> GenerateReport(int id, CancellationToken cancellationToken)
+    {
+        await messageBus.SendAsync(new GenerateLearningHubReportMessage(id), cancellationToken);
+        return TypedResults.Accepted($"api/learning-hubs/{id}/generate-report");
     }
 
     /// <summary>
@@ -230,6 +260,7 @@ public sealed class LearningHubController(IDispatcher dispatcher, IStreamDispatc
     [HttpGet("{id:int}/send-signalr")]
     public async Task<IResult> GetDemoSignalR(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DemoSignalRSendCommand(id), cancellationToken)).ToAccepted("");
+
 }
 
 /// <summary>
@@ -240,8 +271,4 @@ public sealed record SaveLearningHubAuditLogRequest(string Action, string? Detai
 /// <summary>
 /// Request body para guardar metadatos de un Learning Hub.
 /// </summary>
-public sealed record SaveLearningHubMetadataRequest(
-    int? TotalStudents,
-    int? TotalCourses,
-    double? AverageRating,
-    string? Tags);
+public sealed record SaveLearningHubMetadataRequest(int? TotalStudents, int? TotalCourses, double? AverageRating, string? Tags);
