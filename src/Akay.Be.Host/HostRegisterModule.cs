@@ -66,7 +66,7 @@ internal static class HostRegisterModule
                         })
                         .AddHealthChecks();
 
-        builder.Services.AddInfrastructureServices(settings)
+        builder.Services.AddInfrastructureServices(settings, builder.Configuration)
                         .AddApplicationServices(settings);
     }
 

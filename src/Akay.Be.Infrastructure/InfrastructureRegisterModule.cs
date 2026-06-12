@@ -1,11 +1,14 @@
 ﻿using System.Reflection;
 using Akay.Be.Application;
 using Akay.Be.Application.Abstractions.Services;
+using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
 using Akay.To.Azure.Infrastructure.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
+using Akay.To.EF.SqlServer.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
@@ -18,7 +21,7 @@ public static class InfrastructureRegisterModule
     /// <param name="services"></param>
     /// <param name="settings"></param>
     /// <returns></returns>
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings, IConfiguration configuration)
     {
 
         //Base
@@ -30,7 +33,8 @@ public static class InfrastructureRegisterModule
             .AddAzureCognitiveSpeechServices()
             .AddAzureCognitiveTranslatorServices()
             .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version)
-            .AddRebusMessaging(settings?.MessagingSettings, Assembly.GetEntryAssembly()!);
+            .AddRebusMessaging(settings?.MessagingSettings, Assembly.GetEntryAssembly()!)
+            .AddSqlServerEFSupport<ApplicationDbContext>(configuration);
 
         services
             .AddServices()
