@@ -1,0 +1,57 @@
+# AGENTS.md - Akay.Be
+- Arquitectura de la API: Vertical Slice, dependencias entre capas, repositorios, handlers, controllers, etc.
+
+## Build Commands
+
+```powershell
+# Local development (uses ProjectReference to Akay.To.* if ../Akay.To exists)
+.\build-local.cmd
+
+# CI / Pre-push (forces PackageReference only)
+.\build-ci.cmd
+```
+
+## Private Packages
+
+- Feed: `nuget.org`
+- Packages: `Akay.To.*` (mapped in `NuGet.Config`)
+
+## Project Structure
+
+- Solution: `Akay.Be.slnx` (not .sln)
+- Source: `src/`
+- Tests: `test/`
+- Entry point: `src/Akay.Be.Host/Program.cs`
+
+## Architecture
+
+- Clean Architecture layers:
+  - `Akay.Be.Host` → `Application`, `Infrastructure`
+  - `Application` → `Domain`
+  - `Infrastructure` → `Application`, `Domain`
+- Private deps via `UseLocalAkayTo` property (see `Akay.Be.Host.csproj` conditions)
+
+## Testing
+
+- Run: `dotnet test Akay.Be.slnx --configuration Release`
+- Architecture tests: `test/Akay.Be.Architecture.Tests/`
+
+## Versioning
+
+- Source: `Directory.Build.props` (`<VersionPrefix>`)
+- Initial: `1.0.0`
+- Auto-bump: patch +1 on every merge to `main` via `.github/workflows/release.yml`
+- Manual bump: edit `VersionPrefix` in PR for minor/major changes
+
+## CI / Release
+
+- Validate: `.github/workflows/ci.yml` (runs on PR and push to `main`)
+- Release: `.github/workflows/release.yml` (runs on push to `main`)
+  - Bumps `VersionPrefix` patch
+  - Updates `CHANGELOG.md`
+  - Creates GitHub Release with tag
+- Branch protection: `main` requires PR + 1 approval
+- Secrets: none required for NuGet packages
+
+## Recomendaciones
+- When you need to search docs, use Context7.

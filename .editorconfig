@@ -309,5 +309,23 @@ dotnet_diagnostic.S2094.severity = none
 dotnet_diagnostic.S6960.severity = none
 
 
-#S1135: Track uses of "TODO" tags
+# S1135: Track uses of "TODO" tags
 dotnet_diagnostic.S1135.severity = none
+
+
+# S1144: Unused private types or members should be removed
+dotnet_diagnostic.S1144.severity = none
+dotnet_diagnostic.SonarAnalyzer.CSharp:S1144.severity = none
+# Test files
+
+
+[**/test/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+# Generated migration files
+[**/Migrations/*.cs]
+csharp_style_namespace_declarations = block_scoped:none
+csharp_style_expression_bodied_lambdas = false:none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.IDE0053.severity = none
+

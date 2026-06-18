@@ -6,13 +6,16 @@ using Microsoft.EntityFrameworkCore;
 namespace Akay.Be.Infrastructure.Persistence.Context;
 
 public sealed class ApplicationDbContext(IUserContext userContext,
-                                         EFSupportSettings<ApplicationDbContext> supportSettings,
+                                         DbContextRegistration<ApplicationDbContext> registration,
                                          DbContextOptions<ApplicationDbContext> options)
-    : BaseDbContext<ApplicationDbContext>(userContext, supportSettings, options)
+    : BaseDbContext<ApplicationDbContext>(userContext, registration, options)
 {
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyEFSupport(this);
+        modelBuilder.ApplyDbContextSettings(this);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         base.OnModelCreating(modelBuilder);
     }

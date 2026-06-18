@@ -1,10 +1,12 @@
 ﻿using System.Globalization;
 using Akay.Be.Application;
 using Akay.Be.Infrastructure;
+using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.To.Azure.Host;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.ApplicationSettings;
 using Akay.To.Core.Host.DependencyInjection;
+using Akay.To.EF.Infrastructure.DbContexts;
 using Microsoft.Extensions.Options;
 
 namespace Akay.Be.Host;
@@ -66,7 +68,7 @@ internal static class HostRegisterModule
                         })
                         .AddHealthChecks();
 
-        builder.Services.AddInfrastructureServices(settings, builder.Configuration)
+        builder.Services.AddInfrastructureServices(settings)
                         .AddApplicationServices(settings);
     }
 
@@ -74,9 +76,11 @@ internal static class HostRegisterModule
     /// Método de configuración
     /// </summary>
     /// <param name="app"></param>
-    public static WebApplication Configure(this WebApplication app)
+    public static async Task<WebApplication> ConfigureAsync(this WebApplication app)
     {
         var settings = app.Services.GetRequiredService<IOptions<ApplicationSettings>>();
+
+        await app.Services.MigrateDbContextAsync<ApplicationDbContext>();
 
         app.ConfigureLaunchUrl(app.Environment, settings.Value.Application.Name ?? "API")
            .UseStatusCodePages()

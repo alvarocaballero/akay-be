@@ -6,9 +6,9 @@ using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
 using Akay.To.Azure.Infrastructure.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
+using Akay.To.EF.Infrastructure.DependencyInjection;
 using Akay.To.EF.SqlServer.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Akay.Be.Infrastructure;
@@ -21,20 +21,24 @@ public static class InfrastructureRegisterModule
     /// <param name="services"></param>
     /// <param name="settings"></param>
     /// <returns></returns>
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings)
     {
+        ArgumentNullException.ThrowIfNull(settings);
 
         //Base
         services
-            .AddCache(settings?.CacheSettings)
-            .AddAzureBlobStorage(settings?.AzureStorageSettings)
-            .AddAzureTableStorage(settings?.AzureStorageSettings)
-            .AddSignalR(settings?.AzureSignalRSettings)
+            .AddCache(settings.CacheSettings)
+            .AddAzureBlobStorage(settings.AzureStorageSettings)
+            .AddAzureTableStorage(settings.AzureStorageSettings)
+            .AddSignalR(settings.AzureSignalRSettings)
             .AddAzureCognitiveSpeechServices()
             .AddAzureCognitiveTranslatorServices()
-            .AddHttpClients(settings?.HttpClientSettings, settings?.Application?.Name, settings?.Application?.Version)
-            .AddRebusMessaging(settings?.MessagingSettings, Assembly.GetEntryAssembly()!)
-            .AddSqlServerEFSupport<ApplicationDbContext>(configuration);
+            .AddHttpClients(settings.HttpClientSettings, settings.Application?.Name, settings.Application?.Version)
+            .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!)
+            .AddSqlServerEFContext<ApplicationDbContext>(settings);
+
+        services.AddHealthChecks()
+                .AddDbContextHealthCheck<ApplicationDbContext>("application_db", tags: ["db", "sqlserver"]);
 
         services
             .AddServices()
@@ -60,6 +64,7 @@ public static class InfrastructureRegisterModule
     private static IServiceCollection AddRepositories(this IServiceCollection services)
     {
         return services;
+
     }
 
 }
