@@ -38,11 +38,6 @@ public class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRole
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(x => x.Role)
-            .WithMany()
-            .HasForeignKey(x => x.RoleId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasOne(x => x.Organization)
             .WithMany(x => x.UserRoleAssignments)
             .HasForeignKey(x => x.OrganizationId)

@@ -1,6 +1,6 @@
+using Akay.Be.Domain.Enums;
 using Akay.To.Core.Domain.Auditing;
 using Akay.To.Core.Domain.Entities;
-using Akay.Be.Domain.Aggregates.Organization;
 
 namespace Akay.Be.Domain.Aggregates.Identity;
 
@@ -22,18 +22,15 @@ public class UserRoleAssignment : Entity<int>, ISoftDeletable, IAuditable
 
     public User User { get; private set; } = null!;
 
-    public Role Role { get; private set; } = null!;
-
     public Organization.Organization? Organization { get; private set; }
 
     private UserRoleAssignment()
     {
     }
 
-    public static UserRoleAssignment Create(User user, Role role, Organization.Organization? organization)
+    public static UserRoleAssignment Create(User user, UserRole role, Organization.Organization? organization)
     {
         ArgumentNullException.ThrowIfNull(user);
-        ArgumentNullException.ThrowIfNull(role);
 
         ValidateRoleScope(role, organization);
 
@@ -41,8 +38,7 @@ public class UserRoleAssignment : Entity<int>, ISoftDeletable, IAuditable
         {
             UserId = user.Id,
             User = user,
-            RoleId = role.Id,
-            Role = role,
+            RoleId = (int)role,
             OrganizationId = organization?.Id,
             Organization = organization,
             IsActive = true,
@@ -53,16 +49,16 @@ public class UserRoleAssignment : Entity<int>, ISoftDeletable, IAuditable
 
     public void Activate() => IsActive = true;
 
-    private static void ValidateRoleScope(Role role, Organization.Organization? organization)
+    private static void ValidateRoleScope(UserRole role, Organization.Organization? organization)
     {
         var isGlobal = organization is null;
 
-        if (string.Equals(role.Code, RoleCodes.SuperAdmin, StringComparison.Ordinal))
+        if (role == UserRole.SuperAdmin)
         {
             if (!isGlobal)
             {
                 throw new InvalidOperationException(
-                    $"Role '{RoleCodes.SuperAdmin}' must have OrganizationId = null.");
+                    $"Role '{nameof(UserRole.SuperAdmin)}' must have OrganizationId = null.");
             }
 
             return;
@@ -71,19 +67,7 @@ public class UserRoleAssignment : Entity<int>, ISoftDeletable, IAuditable
         if (isGlobal)
         {
             throw new InvalidOperationException(
-                $"Role '{role.Code}' must be assigned to a specific organization.");
-        }
-
-        if (string.Equals(role.Code, RoleCodes.OrganizationAdmin, StringComparison.Ordinal) && organization!.IsCenter)
-        {
-            throw new InvalidOperationException(
-                $"Role '{RoleCodes.OrganizationAdmin}' can only be assigned to a root organization (IsCenter = false).");
-        }
-
-        if (string.Equals(role.Code, RoleCodes.CenterAdmin, StringComparison.Ordinal) && !organization!.IsCenter)
-        {
-            throw new InvalidOperationException(
-                $"Role '{RoleCodes.CenterAdmin}' can only be assigned to a center organization (IsCenter = true).");
+                $"Role '{role}' must be assigned to a specific organization.");
         }
     }
 }

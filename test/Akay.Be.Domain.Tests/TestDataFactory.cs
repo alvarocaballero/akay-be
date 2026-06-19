@@ -13,11 +13,6 @@ internal static class TestDataFactory
         return User.Create(externalId, email, displayName);
     }
 
-    public static Role CreateRole(string code, string name)
-    {
-        return Role.Create(code, name);
-    }
-
     public static Organization CreateRootOrganization(Guid tenantId, string name = "Root Org")
     {
         return Organization.Create(tenantId, name, isCenter: false);

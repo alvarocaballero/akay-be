@@ -1,6 +1,5 @@
 using Akay.Be.Domain.Aggregates.Academic;
 using Akay.Be.Domain.Aggregates.Identity;
-using Akay.Be.Domain.Aggregates.Organization;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.EF.Infrastructure.DbContexts;
 using Akay.To.EF.Infrastructure.ModelBuilding;
@@ -17,8 +16,6 @@ public sealed class ApplicationDbContext(IUserContext userContext,
         Set<Domain.Aggregates.Organization.Organization>();
 
     public DbSet<User> Users => Set<User>();
-
-    public DbSet<Role> Roles => Set<Role>();
 
     public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
 

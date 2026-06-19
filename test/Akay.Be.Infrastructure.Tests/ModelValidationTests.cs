@@ -148,23 +148,6 @@ public class ModelValidationTests
     }
 
     [Fact]
-    public void RoleHasSeedData()
-    {
-        using var context = TestDbContextFactory.CreateContext();
-
-        var designTimeModel = context.GetService<IDesignTimeModel>().Model;
-        var seedData = designTimeModel.FindEntityType(typeof(Role))!.GetSeedData().ToList();
-
-        Assert.Equal(5, seedData.Count);
-        var codes = seedData.Select(s => (string)s["Code"]!).ToHashSet();
-        Assert.Contains("SuperAdmin", codes);
-        Assert.Contains("OrganizationAdmin", codes);
-        Assert.Contains("CenterAdmin", codes);
-        Assert.Contains("Teacher", codes);
-        Assert.Contains("Student", codes);
-    }
-
-    [Fact]
     public void CourseIsMappedToAcademicSchema()
     {
         using var context = TestDbContextFactory.CreateContext();

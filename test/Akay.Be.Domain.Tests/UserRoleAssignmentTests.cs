@@ -1,4 +1,5 @@
 using Akay.Be.Domain.Aggregates.Identity;
+using Akay.Be.Domain.Enums;
 using Akay.Be.Domain.Aggregates.Organization;
 
 namespace Akay.Be.Domain.Tests;
@@ -9,68 +10,43 @@ public class UserRoleAssignmentTests
     public void CreateSuperAdminWithOrganizationThrows()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.SuperAdmin, "Super");
         var org = TestDataFactory.CreateRootOrganization(Guid.NewGuid());
 
         Assert.Throws<InvalidOperationException>(() =>
-            UserRoleAssignment.Create(user, role, org));
+            UserRoleAssignment.Create(user, UserRole.SuperAdmin, org));
     }
 
     [Fact]
     public void CreateSuperAdminWithoutOrganizationSucceeds()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.SuperAdmin, "Super");
 
-        var assignment = UserRoleAssignment.Create(user, role, organization: null);
+        var assignment = UserRoleAssignment.Create(user, UserRole.SuperAdmin, organization: null);
 
         Assert.Null(assignment.OrganizationId);
         Assert.Equal(user.Id, assignment.UserId);
-        Assert.Equal(role.Id, assignment.RoleId);
+        Assert.Equal((int)UserRole.SuperAdmin, assignment.RoleId);
     }
 
     [Fact]
-    public void CreateOrganizationAdminOnCenterThrows()
+    public void CreateAdminOnRootSucceeds()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.OrganizationAdmin, "Org Admin");
-        var center = TestDataFactory.CreateCenter(Guid.NewGuid());
-
-        Assert.Throws<InvalidOperationException>(() =>
-            UserRoleAssignment.Create(user, role, center));
-    }
-
-    [Fact]
-    public void CreateOrganizationAdminOnRootSucceeds()
-    {
-        var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.OrganizationAdmin, "Org Admin");
         var root = TestDataFactory.CreateRootOrganization(Guid.NewGuid());
 
-        var assignment = UserRoleAssignment.Create(user, role, root);
+        var assignment = UserRoleAssignment.Create(user, UserRole.Admin, root);
 
         Assert.Equal(root.Id, assignment.OrganizationId);
+        Assert.Equal((int)UserRole.Admin, assignment.RoleId);
     }
 
     [Fact]
-    public void CreateCenterAdminOnRootThrows()
+    public void CreateAdminOnCenterSucceeds()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.CenterAdmin, "Center Admin");
-        var root = TestDataFactory.CreateRootOrganization(Guid.NewGuid());
-
-        Assert.Throws<InvalidOperationException>(() =>
-            UserRoleAssignment.Create(user, role, root));
-    }
-
-    [Fact]
-    public void CreateCenterAdminOnCenterSucceeds()
-    {
-        var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.CenterAdmin, "Center Admin");
         var center = TestDataFactory.CreateCenter(Guid.NewGuid());
 
-        var assignment = UserRoleAssignment.Create(user, role, center);
+        var assignment = UserRoleAssignment.Create(user, UserRole.Admin, center);
 
         Assert.Equal(center.Id, assignment.OrganizationId);
     }
@@ -79,20 +55,18 @@ public class UserRoleAssignmentTests
     public void CreateTeacherWithoutOrganizationThrows()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.Teacher, "Teacher");
 
         Assert.Throws<InvalidOperationException>(() =>
-            UserRoleAssignment.Create(user, role, organization: null));
+            UserRoleAssignment.Create(user, UserRole.Teacher, organization: null));
     }
 
     [Fact]
     public void CreateTeacherOnRootSucceeds()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.Teacher, "Teacher");
         var root = TestDataFactory.CreateRootOrganization(Guid.NewGuid());
 
-        var assignment = UserRoleAssignment.Create(user, role, root);
+        var assignment = UserRoleAssignment.Create(user, UserRole.Teacher, root);
 
         Assert.Equal(root.Id, assignment.OrganizationId);
     }
@@ -101,10 +75,9 @@ public class UserRoleAssignmentTests
     public void CreateTeacherOnCenterSucceeds()
     {
         var user = TestDataFactory.CreateUser();
-        var role = TestDataFactory.CreateRole(RoleCodes.Teacher, "Teacher");
         var center = TestDataFactory.CreateCenter(Guid.NewGuid());
 
-        var assignment = UserRoleAssignment.Create(user, role, center);
+        var assignment = UserRoleAssignment.Create(user, UserRole.Teacher, center);
 
         Assert.Equal(center.Id, assignment.OrganizationId);
     }
@@ -113,19 +86,17 @@ public class UserRoleAssignmentTests
     public void SameUserCanHaveMultipleRolesOnSameCenter()
     {
         var user = TestDataFactory.CreateUser();
-        var centerAdmin = TestDataFactory.CreateRole(RoleCodes.CenterAdmin, "Center Admin");
-        var teacher = TestDataFactory.CreateRole(RoleCodes.Teacher, "Teacher");
         var center = TestDataFactory.CreateCenter(Guid.NewGuid());
 
-        var first = UserRoleAssignment.Create(user, centerAdmin, center);
-        var second = UserRoleAssignment.Create(user, teacher, center);
+        var first = UserRoleAssignment.Create(user, UserRole.Admin, center);
+        var second = UserRoleAssignment.Create(user, UserRole.Teacher, center);
 
         Assert.Equal(user.Id, first.UserId);
         Assert.Equal(user.Id, second.UserId);
         Assert.Equal(center.Id, first.OrganizationId);
         Assert.Equal(center.Id, second.OrganizationId);
-        Assert.NotSame(first.Role, second.Role);
-        Assert.Same(centerAdmin, first.Role);
-        Assert.Same(teacher, second.Role);
+        Assert.NotEqual(first.RoleId, second.RoleId);
+        Assert.Equal((int)UserRole.Admin, first.RoleId);
+        Assert.Equal((int)UserRole.Teacher, second.RoleId);
     }
 }
