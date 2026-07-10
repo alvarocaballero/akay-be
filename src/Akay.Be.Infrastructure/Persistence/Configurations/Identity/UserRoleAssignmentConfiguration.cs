@@ -1,10 +1,11 @@
-using Akay.Be.Domain.Aggregates.Identity;
+using Akay.Be.Domain.Entities.Identity;
+using Akay.Be.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Akay.Be.Infrastructure.Persistence.Configurations.Identity;
 
-public class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRoleAssignment>
+internal sealed class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRoleAssignment>
 {
     public void Configure(EntityTypeBuilder<UserRoleAssignment> builder)
     {
@@ -12,19 +13,14 @@ public class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRole
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.Id)
-            .UseIdentityColumn();
-
         builder.Property(x => x.UserId)
             .IsRequired();
 
-        builder.Property(x => x.RoleId)
-            .IsRequired();
+        builder.Property(x => x.CenterId);
 
-        builder.Property(x => x.OrganizationId);
-
-        builder.Property(x => x.IsActive)
-            .IsRequired();
+        builder.Property(x => x.Role)
+            .IsRequired()
+            .HasConversion<int>();
 
         builder.Property(x => x.CreatedAt)
             .IsRequired();
@@ -33,24 +29,17 @@ public class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRole
 
         builder.Property(x => x.DeletedAt);
 
-        builder.HasOne(x => x.User)
-            .WithMany(x => x.UserRoleAssignments)
-            .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasOne(x => x.Organization)
-            .WithMany(x => x.UserRoleAssignments)
-            .HasForeignKey(x => x.OrganizationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasIndex(x => new { x.UserId, x.OrganizationId, x.RoleId })
+        builder.HasIndex(x => new { x.UserId, x.Role })
             .IsUnique()
-            .HasFilter("[OrganizationId] IS NOT NULL")
-            .HasDatabaseName("UX_UserRoleAssignment_Scoped");
+            .HasDatabaseName("IX_UserRoleAssignment_UserId_Role_Global")
+            .HasFilter("[CenterId] IS NULL AND [DeletedAt] IS NULL");
 
-        builder.HasIndex(x => new { x.UserId, x.RoleId })
+        builder.HasIndex(x => new { x.UserId, x.CenterId, x.Role })
             .IsUnique()
-            .HasFilter("[OrganizationId] IS NULL")
-            .HasDatabaseName("UX_UserRoleAssignment_Global");
+            .HasDatabaseName("IX_UserRoleAssignment_UserId_CenterId_Role")
+            .HasFilter("[CenterId] IS NOT NULL AND [DeletedAt] IS NULL");
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_UserRoleAssignment_Role_CenterId",
+            "([Role] = 1 AND [CenterId] IS NULL) OR ([Role] IN (2, 3, 4) AND [CenterId] IS NOT NULL)"));
     }
 }

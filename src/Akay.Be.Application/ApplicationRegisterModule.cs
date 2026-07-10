@@ -1,4 +1,5 @@
-﻿using Akay.To.Core.Application.DependencyInjection;
+﻿using Akay.Be.Application.Abstractions.Services;
+using Akay.To.Core.Application.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Akay.Be.Application;
@@ -31,6 +32,7 @@ public static class ApplicationRegisterModule
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddScoped<IAdminScopeService, Services.AdminScopeService>();
         return services;
     }
 }

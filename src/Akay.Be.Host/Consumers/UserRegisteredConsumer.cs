@@ -1,4 +1,4 @@
-using Akay.Be.Application.Features.Messaging;
+using Akay.Be.Application.Features.LearningHubs.Messaging;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;
 using Akay.To.Core.Infrastructure.Messaging;

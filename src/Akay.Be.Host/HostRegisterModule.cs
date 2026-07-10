@@ -1,12 +1,11 @@
 ﻿using System.Globalization;
 using Akay.Be.Application;
 using Akay.Be.Infrastructure;
-using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.To.Azure.Host;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.ApplicationSettings;
+using Akay.Be.Infrastructure.Contexts;
 using Akay.To.Core.Host.DependencyInjection;
-using Akay.To.EF.Infrastructure.DbContexts;
 using Microsoft.Extensions.Options;
 
 namespace Akay.Be.Host;
@@ -41,11 +40,11 @@ internal static class HostRegisterModule
                         .AddHttpApi()
                         .AddExceptionHandlerProblemDetails()
                         .AddCorsOptions(settings?.CorsAllowedOrigins)
-                        .AddCultureInfo(settings?.CultureInfo)
-                        .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
-                        .AddOpenApi(settings?.Application, settings?.SecuritySettings)
-                        .AddUserContext()
-                        .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
+                         .AddCultureInfo(settings?.CultureInfo)
+                         .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
+                         .AddOpenApi(settings?.Application, settings?.SecuritySettings)
+                         .AddUserContext<AkayUserContext>()
+                         .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
                         {
                             new()
                             {
@@ -79,8 +78,6 @@ internal static class HostRegisterModule
     public static async Task<WebApplication> ConfigureAsync(this WebApplication app)
     {
         var settings = app.Services.GetRequiredService<IOptions<ApplicationSettings>>();
-
-        await app.Services.MigrateDbContextAsync<ApplicationDbContext>();
 
         app.ConfigureLaunchUrl(app.Environment, settings.Value.Application.Name ?? "API")
            .UseStatusCodePages()

@@ -31,8 +31,4 @@ internal sealed class TestUserContext : IUserContext
     public string Name => string.Empty;
     public string Email => string.Empty;
     public IEnumerable<string> Roles => Array.Empty<string>();
-    public bool IsApiKey => false;
-    public bool IsBearer => false;
-    public bool IsMasterApiKey => false;
-    public Guid? TenantId => null;
 }

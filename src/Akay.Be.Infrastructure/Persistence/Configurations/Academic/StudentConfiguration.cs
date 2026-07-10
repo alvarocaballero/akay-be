@@ -1,25 +1,25 @@
-using Akay.Be.Domain.Aggregates.Academic;
+using Akay.Be.Domain.Entities.Academic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Akay.Be.Infrastructure.Persistence.Configurations.Academic;
 
-public class StudentConfiguration : IEntityTypeConfiguration<Student>
+internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 {
     public void Configure(EntityTypeBuilder<Student> builder)
     {
-        builder.ToTable("Student", "academic");
+        builder.ToTable(nameof(Student), "academic");
 
         builder.HasKey(x => x.Id);
-
-        builder.Property(x => x.Id)
-            .UseIdentityColumn();
 
         builder.Property(x => x.UserId)
             .IsRequired();
 
         builder.Property(x => x.CenterId)
             .IsRequired();
+
+        builder.Property(x => x.StudentNumber)
+            .HasMaxLength(50);
 
         builder.Property(x => x.IsActive)
             .IsRequired();
@@ -36,21 +36,9 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.Center)
-            .WithMany()
-            .HasForeignKey(x => x.CenterId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasIndex(x => x.UserId)
+        builder.HasIndex(x => new { x.UserId, x.CenterId })
             .IsUnique()
-            .HasDatabaseName("UX_Student_UserId");
-
-        builder.HasIndex(x => x.CenterId)
-            .HasDatabaseName("IX_Student_CenterId");
-
-        builder.HasMany(x => x.StudentCourses)
-            .WithOne(x => x.Student)
-            .HasForeignKey(x => x.StudentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasDatabaseName("IX_Student_UserId_CenterId")
+            .HasFilter("[DeletedAt] IS NULL");
     }
 }

@@ -1,31 +1,30 @@
-using Akay.Be.Domain.Aggregates.Identity;
+using Akay.Be.Domain.Entities.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Akay.Be.Infrastructure.Persistence.Configurations.Identity;
 
-public class UserConfiguration : IEntityTypeConfiguration<User>
+internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.ToTable("User", "identity");
+        builder.ToTable(nameof(User), "identity");
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.Id)
-            .UseIdentityColumn();
-
-        builder.Property(x => x.ExternalId)
-            .IsRequired()
-            .HasMaxLength(100);
+        builder.Property(x => x.ExternalId);
 
         builder.Property(x => x.Email)
             .IsRequired()
-            .HasMaxLength(320);
+            .HasMaxLength(256);
 
-        builder.Property(x => x.DisplayName)
+        builder.Property(x => x.FirstName)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasMaxLength(100);
+
+        builder.Property(x => x.LastName)
+            .IsRequired()
+            .HasMaxLength(100);
 
         builder.Property(x => x.IsActive)
             .IsRequired();
@@ -37,15 +36,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.DeletedAt);
 
-        builder.HasIndex(x => x.ExternalId)
-            .IsUnique()
-            .HasDatabaseName("UX_User_ExternalId");
-
         builder.HasIndex(x => x.Email)
             .IsUnique()
-            .HasDatabaseName("UX_User_Email");
+            .HasDatabaseName("IX_User_Email")
+            .HasFilter("[DeletedAt] IS NULL");
 
-        builder.HasMany(x => x.UserRoleAssignments)
+        builder.HasIndex(x => x.ExternalId)
+            .IsUnique()
+            .HasDatabaseName("IX_User_ExternalId")
+            .HasFilter("[ExternalId] IS NOT NULL AND [DeletedAt] IS NULL");
+
+        builder.HasMany(x => x.RoleAssignments)
             .WithOne(x => x.User)
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);

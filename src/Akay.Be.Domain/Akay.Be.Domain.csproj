@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+    <InternalsVisibleTo Include="Akay.Be.Domain.Tests" />
+    <InternalsVisibleTo Include="Akay.Be.Infrastructure.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akay.To.Core" />
   </ItemGroup>
 </Project>

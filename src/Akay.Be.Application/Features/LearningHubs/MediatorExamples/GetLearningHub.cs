@@ -20,6 +20,6 @@ internal sealed class GetLearningHubQueryHandler : IQueryHandler<GetLearningHubQ
 
         return hub is null
             ? Error.NotFound("learninghub.not_found", $"Centro de estudios con ID {request.Id} no encontrado.")
-            : new LearningHubResponse(hub.Id, hub.Name, hub.Description, hub.Address, hub.Category, hub.Status, hub.CreatedAt, hub.UpdatedAt);
+            : new LearningHubResponse(hub.Id, hub.Name, hub.Description, hub.Address, hub.Category, hub.Status);
     }
 }

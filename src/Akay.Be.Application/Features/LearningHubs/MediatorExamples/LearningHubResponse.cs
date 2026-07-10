@@ -5,6 +5,4 @@ public sealed record LearningHubResponse(int Id,
                                          string Description,
                                          string Address,
                                          string Category,
-                                         string Status,
-                                         DateTime CreatedAt,
-                                         DateTime UpdatedAt);
+                                         string Status);

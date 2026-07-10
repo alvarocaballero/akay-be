@@ -1,10 +1,11 @@
 using System.Diagnostics;
 using System.Globalization;
-using Akay.Be.Application.Features.Messaging;
+using Akay.Be.Application.Features.LearningHubs.Messaging;
 using Akay.To.Core.Application.Abstractions.BlobStorage;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;
+using Akay.To.Core.Application.Responses;
 using Akay.To.Core.Application.Contexts;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
@@ -27,7 +28,7 @@ public sealed record CreateLearningHubCommand(string Name,
                                               Stream FileStream,
                                               string FileName,
                                               string ContentType,
-                                              int FailedAttempts = 0) : ICommand<LearningHubResponse>, IRetryableRequest, ICompensableRequest
+                                               int FailedAttempts = 0) : ICommand<CreatedResponse<int>>, IRetryableRequest, ICompensableRequest
 {
     /// <summary>
     /// Número de reintentos que el <see cref="RetryBehavior"/> aplicará ante excepciones transitorias.
@@ -48,9 +49,9 @@ public sealed record CreateLearningHubCommand(string Name,
 internal sealed class CreateLearningHubCommandHandler(ICompensationContext compensations,
                                                       IMessageBus messageBus,
                                                       IBlobStorageServiceFactory blobFactory,
-                                                      IUserContext userContext) : ICommandHandler<CreateLearningHubCommand, LearningHubResponse>
+                                                       IUserContext userContext) : ICommandHandler<CreateLearningHubCommand, CreatedResponse<int>>
 {
-    public async ValueTask<Result<LearningHubResponse>> Handle(CreateLearningHubCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Result<CreatedResponse<int>>> Handle(CreateLearningHubCommand request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -129,14 +130,7 @@ internal sealed class CreateLearningHubCommandHandler(ICompensationContext compe
 
 
         // 10. Si todo ha ido bien, se devuelve el resultado exitoso con los datos del hub creado.
-        return new LearningHubResponse(created.Id,
-                                       created.Name,
-                                       created.Description,
-                                       created.Address,
-                                       created.Category,
-                                       created.Status,
-                                       created.CreatedAt,
-                                       created.UpdatedAt);
+        return new CreatedResponse<int>(created.Id, new DateTimeOffset(created.CreatedAt, TimeSpan.Zero));
     }
 
     /// <summary>

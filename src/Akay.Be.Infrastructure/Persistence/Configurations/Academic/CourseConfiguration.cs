@@ -1,22 +1,16 @@
-using Akay.Be.Domain.Aggregates.Academic;
+using Akay.Be.Domain.Entities.Academic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Akay.Be.Infrastructure.Persistence.Configurations.Academic;
 
-public class CourseConfiguration : IEntityTypeConfiguration<Course>
+internal sealed class CourseConfiguration : IEntityTypeConfiguration<Course>
 {
     public void Configure(EntityTypeBuilder<Course> builder)
     {
-        builder.ToTable("Course", "academic");
+        builder.ToTable(nameof(Course), "academic");
 
         builder.HasKey(x => x.Id);
-
-        builder.Property(x => x.Id)
-            .UseIdentityColumn();
-
-        builder.Property(x => x.CenterId)
-            .IsRequired();
 
         builder.Property(x => x.AcademicPeriodId)
             .IsRequired();
@@ -25,8 +19,9 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
             .IsRequired()
             .HasMaxLength(200);
 
-        builder.Property(x => x.IsActive)
-            .IsRequired();
+        builder.Property(x => x.Code)
+            .IsRequired()
+            .HasMaxLength(50);
 
         builder.Property(x => x.CreatedAt)
             .IsRequired();
@@ -35,26 +30,22 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
 
         builder.Property(x => x.DeletedAt);
 
-        builder.HasOne(x => x.Center)
-            .WithMany(x => x.Courses)
-            .HasForeignKey(x => x.CenterId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.AcademicPeriodId, x.Code })
+            .IsUnique()
+            .HasDatabaseName("IX_Course_AcademicPeriodId_Code")
+            .HasFilter("[DeletedAt] IS NULL");
 
         builder.HasOne(x => x.AcademicPeriod)
-            .WithMany()
+            .WithMany(x => x.Courses)
             .HasForeignKey(x => x.AcademicPeriodId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.CenterId, x.AcademicPeriodId, x.Name })
-            .IsUnique()
-            .HasDatabaseName("UX_Course_CenterId_AcademicPeriodId_Name");
-
-        builder.HasMany(x => x.CourseSubjects)
+        builder.HasMany(x => x.Subjects)
             .WithOne(x => x.Course)
             .HasForeignKey(x => x.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(x => x.StudentCourses)
+        builder.HasMany(x => x.Students)
             .WithOne(x => x.Course)
             .HasForeignKey(x => x.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
