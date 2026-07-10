@@ -1,4 +1,4 @@
-using Akay.Be.Application.Features.Messaging;
+using Akay.Be.Application.Features.LearningHubs.Messaging;
 using Akay.To.Core.Application.Abstractions.Messaging;
 
 namespace Akay.Be.Host.Consumers.Messaging;

@@ -1,9 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="Akay.To.Azure" />
+    <InternalsVisibleTo Include="Akay.Be.Infrastructure.Tests" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Akay.To.Azure" />
+    <PackageReference Include="Akay.To.EF.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Persistence\Configurations\" />
+    <Folder Include="Persistence\Repositories\" />
+    <Folder Include="Persistence\Seed\" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Akay.Be.Application.Features.Messaging;
+using Akay.Be.Application.Features.LearningHubs.Messaging;
 using Akay.Be.Host.Consumers.Messaging;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;

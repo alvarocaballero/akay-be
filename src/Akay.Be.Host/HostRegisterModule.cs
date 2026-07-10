@@ -4,6 +4,7 @@ using Akay.Be.Infrastructure;
 using Akay.To.Azure.Host;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.ApplicationSettings;
+using Akay.Be.Infrastructure.Contexts;
 using Akay.To.Core.Host.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -39,11 +40,11 @@ internal static class HostRegisterModule
                         .AddHttpApi()
                         .AddExceptionHandlerProblemDetails()
                         .AddCorsOptions(settings?.CorsAllowedOrigins)
-                        .AddCultureInfo(settings?.CultureInfo)
-                        .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
-                        .AddOpenApi(settings?.Application, settings?.SecuritySettings)
-                        .AddUserContext()
-                        .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
+                         .AddCultureInfo(settings?.CultureInfo)
+                         .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
+                         .AddOpenApi(settings?.Application, settings?.SecuritySettings)
+                         .AddUserContext<AkayUserContext>()
+                         .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
                         {
                             new()
                             {
@@ -74,7 +75,7 @@ internal static class HostRegisterModule
     /// Método de configuración
     /// </summary>
     /// <param name="app"></param>
-    public static WebApplication Configure(this WebApplication app)
+    public static async Task<WebApplication> ConfigureAsync(this WebApplication app)
     {
         var settings = app.Services.GetRequiredService<IOptions<ApplicationSettings>>();
 
