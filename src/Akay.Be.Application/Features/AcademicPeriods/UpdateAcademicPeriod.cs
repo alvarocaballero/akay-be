@@ -34,11 +34,10 @@ internal sealed class UpdateAcademicPeriodCommandHandler(IAdminScopeService admi
         if (await academicPeriodRepository.NameExistsInCenterAsync(period.CenterId, request.Name, request.Id, cancellationToken))
             return Error.Conflict("academicperiod.duplicate_name", "Ya existe un periodo académico con ese nombre en el centro.");
 
-        period.ChangeName(request.Name);
-        period.ChangeDates(request.StartDate, request.EndDate);
-        period.Deactivate();
-        if (request.IsActive)
-            period.Activate();
+        period.Update(request.Name,
+                      request.StartDate,
+                      request.EndDate,
+                      request.IsActive);
 
         academicPeriodRepository.Update(period);
 

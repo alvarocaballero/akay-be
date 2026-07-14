@@ -1,4 +1,5 @@
 using Akay.Be.Domain.Entities.Academic;
+using Akay.Be.Domain.Events.Academic;
 
 namespace Akay.Be.Domain.Tests.Entities;
 
@@ -43,10 +44,16 @@ public class AcademicPeriodTests
         var period = AcademicPeriod.Create(1, "2026-2027", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
 
         Assert.Equal(1, period.CenterId);
+        Assert.NotEqual(Guid.Empty, period.SyncId);
         Assert.Equal("2026-2027", period.Name);
         Assert.Equal(new DateOnly(2026, 9, 1), period.StartDate);
         Assert.Equal(new DateOnly(2027, 6, 30), period.EndDate);
         Assert.True(period.IsActive);
+
+        var outboxEvent = Assert.IsType<AcademicPeriodCreatedOutboxEvent>(Assert.Single(period.AfterSaveDomainEvents));
+        Assert.Equal(period.SyncId, outboxEvent.SyncId);
+        Assert.Equal(period.CenterId, outboxEvent.CenterId);
+        Assert.Equal(period.Name, outboxEvent.Name);
     }
 
     [Fact]
@@ -71,13 +78,17 @@ public class AcademicPeriodTests
     }
 
     [Fact]
-    public void Activate_SetsIsActive()
+    public void Activate_SetsIsActive_And_Raises_DomainEvent()
     {
         var period = AcademicPeriod.Create(1, "2026-2027", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
         period.Deactivate();
+        period.ClearDomainEvents();
+
         period.Activate();
 
         Assert.True(period.IsActive);
+        var domainEvent = Assert.IsType<AcademicPeriodActivatedDomainEvent>(Assert.Single(period.AfterSaveDomainEvents));
+        Assert.Equal(period.SyncId, domainEvent.SyncId);
     }
 
     [Fact]
@@ -87,5 +98,19 @@ public class AcademicPeriodTests
         period.Deactivate();
 
         Assert.False(period.IsActive);
+    }
+
+    [Fact]
+    public void Update_DoesNotRaiseOutboxEvents()
+    {
+        var period = AcademicPeriod.Create(1, "2026-2027", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
+        period.ClearDomainEvents();
+
+        period.Update("2026-2028",
+                      new DateOnly(2026, 10, 1),
+                      new DateOnly(2027, 7, 31),
+                      false);
+
+        Assert.Empty(period.AfterSaveDomainEvents);
     }
 }

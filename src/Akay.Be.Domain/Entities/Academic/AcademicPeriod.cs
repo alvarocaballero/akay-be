@@ -1,16 +1,19 @@
 using Akay.Be.Domain.Entities.Organization;
+using Akay.Be.Domain.Events.Academic;
 using Akay.To.Core.Domain.Auditing;
 using Akay.To.Core.Domain.Entities;
+using Akay.To.Core.Domain.Events;
 
 namespace Akay.Be.Domain.Entities.Academic;
 
-public sealed class AcademicPeriod : AggregateRoot<int>, IAuditable, ISoftDeletable
+public sealed class AcademicPeriod : AggregateRoot<int>, IAuditable, ISoftDeletable, IHasSyncId
 {
     private readonly List<Course> _courses = [];
 
     private AcademicPeriod() { }
 
     public int CenterId { get; private set; }
+    public Guid SyncId { get; private set; }
     public Center Center { get; private set; } = default!;
     public string Name { get; private set; } = default!;
     public DateOnly StartDate { get; private set; }
@@ -33,20 +36,33 @@ public sealed class AcademicPeriod : AggregateRoot<int>, IAuditable, ISoftDeleta
         if (startDate >= endDate)
             throw new ArgumentException("StartDate must be earlier than EndDate.");
 
-        return new AcademicPeriod
+        var period = new AcademicPeriod
         {
             CenterId = centerId,
+            SyncId = Guid.CreateVersion7(),
             Name = name,
             StartDate = startDate,
             EndDate = endDate,
             IsActive = true
         };
+
+        period.RaiseDomainEvent(new AcademicPeriodCreatedOutboxEvent(period.SyncId,
+                                                                     period.CenterId,
+                                                                     period.Name,
+                                                                     period.StartDate,
+                                                                     period.EndDate,
+                                                                     period.IsActive));
+
+        return period;
     }
 
     public void ChangeDates(DateOnly startDate, DateOnly endDate)
     {
         if (startDate >= endDate)
             throw new ArgumentException("StartDate must be earlier than EndDate.");
+
+        if (StartDate == startDate && EndDate == endDate)
+            return;
 
         StartDate = startDate;
         EndDate = endDate;
@@ -55,12 +71,44 @@ public sealed class AcademicPeriod : AggregateRoot<int>, IAuditable, ISoftDeleta
     public void ChangeName(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        if (Name == name)
+            return;
+
         Name = name;
     }
 
-    public void Activate() => IsActive = true;
+    public void Update(string name,
+                       DateOnly startDate,
+                       DateOnly endDate,
+                       bool isActive)
+    {
+        ChangeName(name);
+        ChangeDates(startDate, endDate);
 
-    public void Deactivate() => IsActive = false;
+        if (isActive)
+            Activate();
+        else
+            Deactivate();
+    }
+
+    public void Activate()
+    {
+        if (IsActive)
+            return;
+
+        IsActive = true;
+        RaiseDomainEvent(new AcademicPeriodActivatedDomainEvent(SyncId, CenterId, Name));
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+            return;
+
+        IsActive = false;
+        RaiseDomainEvent(new AcademicPeriodDeactivatedDomainEvent(SyncId, CenterId, Name), DomainEventTiming.BeforeSave);
+    }
 
     public void SoftDelete()
     {

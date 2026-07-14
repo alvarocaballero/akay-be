@@ -15,6 +15,9 @@ internal sealed class AcademicPeriodConfiguration : IEntityTypeConfiguration<Aca
         builder.Property(x => x.CenterId)
             .IsRequired();
 
+        builder.Property(x => x.SyncId)
+            .IsRequired();
+
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(200);
@@ -39,6 +42,10 @@ internal sealed class AcademicPeriodConfiguration : IEntityTypeConfiguration<Aca
             .IsUnique()
             .HasDatabaseName("IX_AcademicPeriod_CenterId_Name")
             .HasFilter("[DeletedAt] IS NULL");
+
+        builder.HasIndex(x => x.SyncId)
+            .IsUnique()
+            .HasDatabaseName("IX_AcademicPeriod_SyncId");
 
         builder.HasOne(x => x.Center)
             .WithMany(x => x.AcademicPeriods)
