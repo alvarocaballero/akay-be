@@ -76,6 +76,27 @@ public class AdminAcademicIntegrationTests
     }
 
     [Fact]
+    public async Task CourseRepository_GetWithStudentsAsync_WithTracking_PersistsUnenrollment()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var ctx = CreateContext(Guid.NewGuid().ToString());
+        var repo = new CourseRepository(ctx);
+        var course = Course.Create(1, "1º ESO", "ESO1");
+        course.EnrollStudent(100);
+
+        ctx.Courses.Add(course);
+        await ctx.SaveChangesAsync(ct);
+        ctx.ChangeTracker.Clear();
+
+        var trackedCourse = await repo.GetWithStudentsAsync(course.Id, false, ct);
+        trackedCourse!.UnenrollStudent(100);
+        await ctx.SaveChangesAsync(ct);
+
+        var enrollment = await ctx.StudentCourses.IgnoreQueryFilters().SingleAsync(ct);
+        Assert.NotNull(enrollment.DeletedAt);
+    }
+
+    [Fact]
     public async Task AcademicPeriodRepository_GetByCenterIdsAsync_FiltersByCenters()
     {
         var ct = TestContext.Current.CancellationToken;

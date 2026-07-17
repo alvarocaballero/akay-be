@@ -14,6 +14,7 @@ namespace Akay.Be.Host.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/students")]
+[Tags("Students")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]

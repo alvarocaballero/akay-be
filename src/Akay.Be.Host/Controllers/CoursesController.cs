@@ -1,7 +1,7 @@
+using Akay.Be.Application.Features.Courses;
 using Akay.Be.Application.Features.CourseStudents;
 using Akay.Be.Application.Features.CourseSubjectStudents;
 using Akay.Be.Application.Features.CourseSubjectTeachers;
-using Akay.Be.Application.Features.Courses;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Responses;
 using Akay.To.Core.Host.Results;
@@ -17,6 +17,7 @@ namespace Akay.Be.Host.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/courses")]
+[Tags("Courses")]
 [Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]

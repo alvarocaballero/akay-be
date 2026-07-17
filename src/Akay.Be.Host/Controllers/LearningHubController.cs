@@ -30,6 +30,7 @@ namespace Akay.Be.Host.Controllers;
     Justification = "Controller de pruebas para demostrar dispatcher síncrono y streaming en un único lugar.")]
 [ApiController]
 [Route("api/learning-hubs")]
+[Tags("LearningHub")]
 public sealed class LearningHubController(IDispatcher dispatcher,
                                           IStreamDispatcher streamDispatcher,
                                           IMessageBus messageBus) : ControllerBase
@@ -120,7 +121,7 @@ public sealed class LearningHubController(IDispatcher dispatcher,
 
     [HttpPost("{id:int}/generate-report")]
     [EndpointSummary("Encola la generacion de un informe del Learning Hub.")]
-    [EndpointDescription("Demuestra ICommandMessage y SendAsync sobre Rebus.")]
+    [EndpointDescription("Demuestra ICommandMessage y SendAsync sobre el proveedor de mensajeria configurado.")]
     public async Task<IResult> GenerateReport(int id, CancellationToken cancellationToken)
     {
         await messageBus.SendAsync(new GenerateLearningHubReportMessage(id), cancellationToken);

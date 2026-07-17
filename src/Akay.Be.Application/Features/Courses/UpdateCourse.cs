@@ -22,7 +22,7 @@ internal sealed class UpdateCourseCommandHandler(IAdminScopeService adminScope,
         if (access.IsFailure)
             return access.Error;
 
-        var course = await courseRepository.GetWithFullGraphAsync(request.Id, cancellationToken);
+        var course = await courseRepository.GetWithFullGraphAsync(request.Id, cancellationToken: cancellationToken);
         if (course is null || course.DeletedAt is not null)
             return Error.NotFound("course.not_found", $"Curso {request.Id} no encontrado.");
 
@@ -31,8 +31,6 @@ internal sealed class UpdateCourseCommandHandler(IAdminScopeService adminScope,
 
         course.UpdateName(request.Name);
         course.UpdateCode(request.Code);
-
-        courseRepository.Update(course);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

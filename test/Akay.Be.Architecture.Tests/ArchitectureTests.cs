@@ -1,4 +1,6 @@
 using System.Reflection;
+using Akay.To.Core.Domain.Auditing;
+using Akay.To.Core.Domain.Entities;
 using NetArchTest.Rules;
 
 namespace Akay.Be.Architecture.Tests;
@@ -26,6 +28,21 @@ public sealed class ArchitectureTests
             .GetResult();
 
         Assert.True(result.IsSuccessful);
+    }
+
+    [Fact]
+    public void TrackableAggregateRoots_MustHaveSyncId()
+    {
+        var violations = Types.InAssembly(Assembly.Load("Akay.Be.Domain"))
+            .GetTypes()
+            .Where(type => type.GetInterfaces().Any(@interface => @interface.IsGenericType
+                                                                   && @interface.GetGenericTypeDefinition() == typeof(IAggregateRoot<>))
+                           && typeof(ITrackChanges).IsAssignableFrom(type)
+                           && !typeof(IHasSyncId).IsAssignableFrom(type))
+            .Select(type => type.FullName)
+            .ToList();
+
+        Assert.Empty(violations);
     }
 
 

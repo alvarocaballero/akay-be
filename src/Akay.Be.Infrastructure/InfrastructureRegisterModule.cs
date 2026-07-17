@@ -1,10 +1,10 @@
 ﻿using System.Reflection;
 using Akay.Be.Application;
+using Akay.Be.Application.Abstractions.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Organization;
 using Akay.Be.Application.Abstractions.Services;
-using Akay.Be.Application.Abstractions.Identity;
 using Akay.Be.Infrastructure.Identity;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.Be.Infrastructure.Persistence.Repositories.Academic;
@@ -15,6 +15,7 @@ using Akay.Be.Infrastructure.SignalRHubs;
 using Akay.To.Azure.Infrastructure.DependencyInjection;
 using Akay.To.Core.Infrastructure.DependencyInjection;
 using Akay.To.EF.SqlServer.Infrastructure.DependencyInjection;
+using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,7 +29,8 @@ public static class InfrastructureRegisterModule
     /// <param name="services"></param>
     /// <param name="settings"></param>
     /// <returns></returns>
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
+                                                               ApplicationSettings? settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 

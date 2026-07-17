@@ -4,7 +4,7 @@ using Akay.To.Core.Application.Abstractions.Messaging;
 namespace Akay.Be.Host.Consumers.Messaging;
 
 /// <summary>
-/// Consumer de ejemplo para mensajes point-to-point enviados con Rebus.
+/// Consumer de ejemplo para mensajes point-to-point enviados por el bus configurado.
 /// </summary>
 internal sealed class GenerateLearningHubReportConsumer(ILogger<GenerateLearningHubReportConsumer> logger) : IMessageHandler<GenerateLearningHubReportMessage>
 {

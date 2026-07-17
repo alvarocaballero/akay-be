@@ -5,8 +5,8 @@ using Akay.To.Core.Application.Abstractions.BlobStorage;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;
-using Akay.To.Core.Application.Responses;
 using Akay.To.Core.Application.Contexts;
+using Akay.To.Core.Application.Responses;
 using Akay.To.Core.Application.Results;
 using FluentValidation;
 
@@ -102,7 +102,7 @@ internal sealed class CreateLearningHubCommandHandler(ICompensationContext compe
         // usar blob.UploadOrGetUriAsync en lugar de UploadAsync.
         // UploadOrGetUriAsync devuelve la URI existente si hay conflicto 409,
         // en lugar de lanzar excepcion.
-        await blob.UploadAsync(blobName, request.FileStream, request.ContentType, compress: true, cancellationToken: cancellationToken);
+        ////await blob.UploadAsync(blobName, request.FileStream, request.ContentType, compress: true, cancellationToken: cancellationToken);
 
         // 8. Simular envío de notificación (con fallos controlados para probar retry/compensación).
         // El parámetro FailedAttempts del comando permite forzar N fallos consecutivos antes del éxito.

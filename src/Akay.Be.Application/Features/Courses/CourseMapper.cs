@@ -7,7 +7,7 @@ internal static class CourseMapper
         var subjects = course.Subjects
             .Select(s => new CourseSubjectResponse(
                 s.SubjectId,
-                s.Subject.Name,
+                s.Subject?.Name,
                 s.Teachers.Select(t => t.UserId).ToList(),
                 s.Students.Count))
             .ToList();

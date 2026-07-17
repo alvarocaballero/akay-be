@@ -3,7 +3,6 @@ using Akay.Be.Application.Features.CourseStudents;
 using Akay.Be.Application.Features.CourseSubjectStudents;
 using Akay.Be.Application.Features.CourseSubjectTeachers;
 using Akay.Be.Domain.Entities.Academic;
-using Akay.Be.Domain.Entities.Identity;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.To.EF.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -12,20 +11,25 @@ namespace Akay.Be.Infrastructure.Persistence.Repositories.Academic;
 
 internal sealed class CourseRepository(ApplicationDbContext context) : BaseRepository<Course, int>(context), ICourseRepository
 {
-    public async Task<Course?> GetWithSubjectsAsync(int id, CancellationToken cancellationToken = default)
-        => await Set
-            .AsNoTracking()
+
+    public async Task<Course?> GetWithSubjectsAsync(int id, bool readOnly = false, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Course> query = readOnly ? Set.AsNoTracking() : Set;
+        return await query
             .Include(x => x.Subjects)
                 .ThenInclude(s => s.Teachers)
             .Include(x => x.Subjects)
                 .ThenInclude(s => s.Students)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
-    public async Task<Course?> GetWithStudentsAsync(int id, CancellationToken cancellationToken = default)
-        => await Set
-            .AsNoTracking()
+    public async Task<Course?> GetWithStudentsAsync(int id, bool readOnly = false, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Course> query = readOnly ? Set.AsNoTracking() : Set;
+        return await query
             .Include(x => x.Students)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<List<Course>> GetByAcademicPeriodIdAsync(int academicPeriodId, CancellationToken cancellationToken = default)
         => await Set
@@ -76,16 +80,21 @@ internal sealed class CourseRepository(ApplicationDbContext context) : BaseRepos
                                                     sc.Student.User.Email))
             .ToListAsync(cancellationToken);
 
-    public async Task<Course?> GetWithFullGraphAsync(int id, CancellationToken cancellationToken = default)
-        => await Set
-            .AsNoTracking()
+    public async Task<Course?> GetWithFullGraphAsync(int id, bool readOnly = false, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Course> query = readOnly ? Set.AsNoTracking() : Set;
+        return await query
+            .AsSplitQuery()
             .Include(x => x.AcademicPeriod)
+            .Include(x => x.Subjects)
+                .ThenInclude(x => x.Subject)
             .Include(x => x.Subjects)
                 .ThenInclude(s => s.Teachers)
             .Include(x => x.Subjects)
                 .ThenInclude(s => s.Students)
             .Include(x => x.Students)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 
     public async Task<List<CourseSubjectStudentResponse>> GetCourseSubjectStudentsWithDetailsAsync(int courseId,
                                                                                                    int subjectId,

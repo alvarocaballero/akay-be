@@ -23,7 +23,7 @@ internal sealed class AssignCourseSubjectTeacherCommandHandler(IAdminScopeServic
         if (access.IsFailure)
             return access.Error;
 
-        var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken);
+        var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
         if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 

@@ -18,7 +18,7 @@ internal sealed class GetCourseByIdQueryHandler(IAdminScopeService adminScope,
         if (access.IsFailure)
             return access.Error;
 
-        var course = await courseRepository.GetWithFullGraphAsync(request.Id, cancellationToken);
+        var course = await courseRepository.GetWithFullGraphAsync(request.Id, readOnly: true, cancellationToken);
         if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.Id} no encontrado.");
 

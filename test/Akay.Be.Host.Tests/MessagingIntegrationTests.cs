@@ -5,10 +5,10 @@ using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;
 using Akay.To.Core.Application.ApplicationSettings;
 using Akay.To.Core.Application.Results;
-using Akay.To.Core.Infrastructure.DependencyInjection;
+using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Rebus.Bus;
 
 namespace Akay.Be.Host.Tests;
 
@@ -33,11 +33,11 @@ public sealed class MessagingIntegrationTests
 
         await using var provider = services.BuildServiceProvider();
 
-        var bus = provider.GetRequiredService<IBus>();
-        await bus.Subscribe<LearningHubCreatedEvent>();
+        foreach (var hostedService in provider.GetServices<IHostedService>())
+            await hostedService.StartAsync(TestContext.Current.CancellationToken);
 
         var message = new LearningHubCreatedEvent(42, "Integration Test Hub", "Testing real consumer");
-        await bus.Publish(message);
+        await provider.GetRequiredService<IMessageBus>().PublishAsync(message, TestContext.Current.CancellationToken);
 
         var command = await dispatcher.WaitForCommand<SendNewLearningHubNotification>(TimeSpan.FromSeconds(3));
 

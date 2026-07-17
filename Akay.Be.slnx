@@ -28,4 +28,5 @@
   <Project Path="../Akay.To/Akay.To.Core/Akay.To.Core.csproj" />
   <Project Path="../Akay.To/Akay.To.EF.SqlServer/Akay.To.EF.SqlServer.csproj" />
   <Project Path="../Akay.To/Akay.To.EF/Akay.To.EF.csproj" />
+  <Project Path="../Akay.To/Akay.To.Messaging.Rebus/Akay.To.Messaging.Rebus.csproj" />
 </Solution>

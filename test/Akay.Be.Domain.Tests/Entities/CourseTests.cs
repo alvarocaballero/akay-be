@@ -4,6 +4,7 @@ namespace Akay.Be.Domain.Tests.Entities;
 
 public class CourseTests
 {
+
     [Fact]
     public void AddSubject_Duplicate_Throws()
     {

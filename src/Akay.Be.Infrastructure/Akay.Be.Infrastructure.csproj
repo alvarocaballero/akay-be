@@ -5,8 +5,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
     <ProjectReference Include="..\..\..\Akay.To\Akay.To.EF.SqlServer\Akay.To.EF.SqlServer.csproj" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" />
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj')">
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">

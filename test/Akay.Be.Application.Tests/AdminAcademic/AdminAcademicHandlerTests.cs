@@ -47,7 +47,7 @@ public class AdminAcademicHandlerTests
         typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30)));
 
         var courseRepo = new Mock<ICourseRepository>();
-        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, Ct)).ReturnsAsync(course);
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var subjectRepo = new Mock<ISubjectRepository>();
         subjectRepo.Setup(x => x.SubjectIsAvailableForCenterAsync(10, 1, Ct)).ReturnsAsync(false);
@@ -73,7 +73,7 @@ public class AdminAcademicHandlerTests
         typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, period);
 
         var courseRepo = new Mock<ICourseRepository>();
-        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, Ct)).ReturnsAsync(course);
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var studentRepo = new Mock<IStudentRepository>();
         studentRepo.Setup(x => x.GetByIdAsync(100, Ct)).ReturnsAsync(Student.Create(100, 2));
@@ -88,6 +88,30 @@ public class AdminAcademicHandlerTests
     }
 
     [Fact]
+    public async Task UnenrollCourseStudentCommandHandler_LoadsTrackedCourseBeforeSaving()
+    {
+        var adminScope = new Mock<IAdminScopeService>();
+        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+
+        var course = Course.Create(1, "1º ESO", "ESO1");
+        course.EnrollStudent(100);
+
+        var courseRepo = new Mock<ICourseRepository>();
+        courseRepo.Setup(x => x.GetWithStudentsAsync(1, false, Ct)).ReturnsAsync(course);
+
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.SaveChangesAsync(Ct)).ReturnsAsync(1);
+
+        var handler = new UnenrollCourseStudentCommandHandler(adminScope.Object, uow.Object, courseRepo.Object);
+        var result = await handler.Handle(new UnenrollCourseStudentCommand(1, 100), Ct);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(course.Students.Single().DeletedAt);
+        courseRepo.Verify(x => x.Update(It.IsAny<Course>()), Times.Never);
+        uow.Verify(x => x.SaveChangesAsync(Ct), Times.Once);
+    }
+
+    [Fact]
     public async Task EnrollCourseSubjectStudentCommandHandler_ReturnsForbidden_WhenStudentNotEnrolledInCourse()
     {
         var adminScope = new Mock<IAdminScopeService>();
@@ -99,7 +123,7 @@ public class AdminAcademicHandlerTests
         typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, period);
 
         var courseRepo = new Mock<ICourseRepository>();
-        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, Ct)).ReturnsAsync(course);
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var uow = new Mock<IUnitOfWork>();
 
@@ -123,7 +147,7 @@ public class AdminAcademicHandlerTests
         typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, period);
 
         var courseRepo = new Mock<ICourseRepository>();
-        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, Ct)).ReturnsAsync(course);
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var uow = new Mock<IUnitOfWork>();
 
