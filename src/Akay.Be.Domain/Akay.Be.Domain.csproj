@@ -6,6 +6,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+    <PackageReference Include="Akay.To.Core" />
   </ItemGroup>
 </Project>

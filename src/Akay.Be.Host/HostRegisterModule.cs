@@ -1,10 +1,11 @@
 ﻿using System.Globalization;
 using Akay.Be.Application;
 using Akay.Be.Infrastructure;
+using Akay.Be.Infrastructure.Contexts;
 using Akay.To.Azure.Host;
+using Akay.To.Azure.Host.Security.EntraId;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.ApplicationSettings;
-using Akay.Be.Infrastructure.Contexts;
 using Akay.To.Core.Host.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -40,11 +41,12 @@ internal static class HostRegisterModule
                         .AddHttpApi()
                         .AddExceptionHandlerProblemDetails()
                         .AddCorsOptions(settings?.CorsAllowedOrigins)
-                         .AddCultureInfo(settings?.CultureInfo)
-                         .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
-                         .AddOpenApi(settings?.Application, settings?.SecuritySettings)
-                         .AddUserContext<AkayUserContext>()
-                         .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
+                        .AddCultureInfo(settings?.CultureInfo)
+                        .AddBearerOrApiKeyAuthentication(settings?.SecuritySettings)
+                        .AddEntraIdAuthentication(settings?.SecuritySettings)
+                        .AddOpenApi(settings?.Application, settings?.SecuritySettings)
+                        .AddUserContext<AkayUserContext>()
+                        .AddRateLimitPolicies(settings?.RateLimitingSettings, new List<RateLimitPolicySettings>
                         {
                             new()
                             {

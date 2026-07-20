@@ -3,9 +3,6 @@
     <InternalsVisibleTo Include="Akay.Be.Infrastructure.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.EF.SqlServer\Akay.To.EF.SqlServer.csproj" />
-    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" />
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
   </ItemGroup>
@@ -13,6 +10,9 @@
     <ProjectReference Include="..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Akay.To.Azure" />
+    <PackageReference Include="Akay.To.EF.SqlServer" />
+    <PackageReference Include="Akay.To.Messaging.Rebus" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

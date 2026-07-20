@@ -9,6 +9,7 @@ namespace Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 
 public interface IUserRepository : IBaseRepository<User, int>
 {
+    Task<User?> GetByExternalIdAsync(Guid externalId, CancellationToken cancellationToken = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);

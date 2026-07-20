@@ -15,6 +15,11 @@ namespace Akay.Be.Infrastructure.Persistence.Repositories.Identity;
 internal sealed class UserRepository(ApplicationDbContext context) : BaseRepository<User, int>(context), IUserRepository
 {
 
+    public async Task<User?> GetByExternalIdAsync(Guid externalId, CancellationToken cancellationToken = default)
+        => await Set
+            .Include(x => x.RoleAssignments)
+            .FirstOrDefaultAsync(x => x.ExternalId == externalId, cancellationToken);
+
     public override async Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         => await Set
             .Include(x => x.RoleAssignments)

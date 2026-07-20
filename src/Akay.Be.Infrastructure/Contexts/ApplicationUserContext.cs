@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Akay.To.Core.Host.Contexts;
 using Microsoft.AspNetCore.Http;
 
