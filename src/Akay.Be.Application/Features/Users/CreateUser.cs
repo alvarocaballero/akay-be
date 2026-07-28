@@ -1,4 +1,3 @@
-using Akay.Be.Application.Abstractions.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Entities.Identity;
@@ -19,9 +18,8 @@ public sealed record CreateUserCommand(string Email,
                                        IReadOnlyList<CreateUserInitialRole> InitialRoles) : ICommand<CreatedResponse<int>>;
 
 internal sealed class CreateUserCommandHandler(IAdminScopeService adminScope,
-                                               IUnitOfWork unitOfWork,
-                                               IUserRepository userRepository,
-                                               IIdentityProvisioningService identityProvisioning) : ICommandHandler<CreateUserCommand, CreatedResponse<int>>
+                                                IUnitOfWork unitOfWork,
+                                                IUserRepository userRepository) : ICommandHandler<CreateUserCommand, CreatedResponse<int>>
 {
     public async ValueTask<Result<CreatedResponse<int>>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
@@ -36,31 +34,14 @@ internal sealed class CreateUserCommandHandler(IAdminScopeService adminScope,
         }
 
         if (await userRepository.EmailExistsAsync(request.Email, cancellationToken))
-            return Error.Conflict("user.email_exists", "Ya existe un usuario con ese email.");
-
-        var temporaryPassword = GenerateTemporaryPassword();
-
-        Guid externalId;
-        try
-        {
-            externalId = await identityProvisioning.CreateUserAsync(request.Email,
-                                                                    request.FirstName,
-                                                                    request.LastName,
-                                                                    temporaryPassword,
-                                                                    cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            return Error.Failure("identity.provisioning_failed", $"No se pudo crear el usuario en el proveedor de identidad: {ex.Message}");
-        }
+            return UserErrors.EmailExists();
 
         var user = User.Create(request.Email, request.FirstName, request.LastName);
-        user.SetExternalId(externalId);
 
         foreach (var role in request.InitialRoles)
         {
             if (role.Role == UserRole.SuperAdmin)
-                return Error.Forbidden("user.superadmin_not_allowed", "No se puede asignar el rol SuperAdmin al crear un usuario.");
+                return UserErrors.SuperAdminNotAllowed();
 
             user.AssignRole(role.CenterId, role.Role);
         }
@@ -69,15 +50,6 @@ internal sealed class CreateUserCommandHandler(IAdminScopeService adminScope,
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreatedResponse<int>(user.Id, user.CreatedAt);
-    }
-
-    private static string GenerateTemporaryPassword()
-    {
-        const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%^&*";
-        var buffer = new byte[16];
-        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        rng.GetBytes(buffer);
-        return new string(buffer.Select(b => chars[b % chars.Length]).ToArray());
     }
 }
 

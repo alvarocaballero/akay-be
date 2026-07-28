@@ -1,4 +1,5 @@
 using Akay.Be.Domain.Enums;
+using Akay.Be.Domain.Events.Identity;
 using Akay.To.Core.Domain.Auditing;
 using Akay.To.Core.Domain.Entities;
 
@@ -78,9 +79,21 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
         ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
 
+        var emailChanged = !string.Equals(Email, email, StringComparison.OrdinalIgnoreCase);
+        var previousEmail = Email;
+        var previousExternalId = ExternalId;
+
         Email = email;
         FirstName = firstName;
         LastName = lastName;
+
+        if (emailChanged && previousExternalId.HasValue)
+        {
+            RaiseDomainEvent(new ExternalIdentityCleanupRequestedOutboxEvent(previousExternalId.Value,
+                                                                             previousEmail,
+                                                                             ExternalIdentityCleanupReasons.EmailChanged));
+            ExternalId = null;
+        }
     }
 
     public void Activate() => IsActive = true;
@@ -89,6 +102,16 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
 
     public void SoftDelete()
     {
+        if (DeletedAt is not null)
+            return;
+
+        if (ExternalId.HasValue)
+        {
+            RaiseDomainEvent(new ExternalIdentityCleanupRequestedOutboxEvent(ExternalId.Value,
+                                                                             Email,
+                                                                             ExternalIdentityCleanupReasons.LocalUserDeleted));
+        }
+
         DeletedAt = DateTimeOffset.UtcNow;
     }
 

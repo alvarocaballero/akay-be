@@ -149,6 +149,7 @@ public sealed class UpdateLearningHubCommandValidatorTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class GetLearningHubsQueryHandlerTests
 {
     private readonly GetLearningHubsQueryHandler _handler = new();
@@ -232,6 +233,7 @@ public sealed class GetLearningHubsQueryHandlerTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class GetLearningHubQueryHandlerTests
 {
     private readonly GetLearningHubQueryHandler _handler = new();
@@ -265,6 +267,7 @@ public sealed class GetLearningHubQueryHandlerTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class CreateLearningHubCommandHandlerTests
 {
     private readonly Mock<ICompensationContext> _mockCompensations = new();
@@ -334,6 +337,7 @@ public sealed class CreateLearningHubCommandHandlerTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class UpdateLearningHubCommandHandlerTests
 {
     private readonly UpdateLearningHubCommandHandler _handler = new();
@@ -369,6 +373,7 @@ public sealed class UpdateLearningHubCommandHandlerTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class DeleteLearningHubCommandHandlerTests
 {
     private readonly Mock<ICompensationContext> _mockCompensations = new();
@@ -427,6 +432,7 @@ public sealed class DeleteLearningHubCommandHandlerTests
     }
 }
 
+[Collection("LearningHubStore")]
 public sealed class SearchLearningHubsStreamHandlerTests
 {
     private readonly SearchLearningHubsStreamHandler _handler = new();

@@ -1,7 +1,7 @@
 ﻿using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Application.Notifications;
 using Akay.Be.Infrastructure.SignalRHubs;
-using Akay.To.Azure.Infrastructure.Abstractions;
+using Akay.To.Azure.Infrastructure.SignalR;
 
 namespace Akay.Be.Infrastructure.Services;
 

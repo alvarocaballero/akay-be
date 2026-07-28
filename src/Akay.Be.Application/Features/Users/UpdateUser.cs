@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Akay.Be.Application.Abstractions.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.To.Core.Application.Abstractions.Mediator;
@@ -16,9 +15,8 @@ public sealed record UpdateUserCommand([property: JsonIgnore] int Id,
                                        bool IsActive) : ICommand<UserResponse>;
 
 internal sealed class UpdateUserCommandHandler(IAdminScopeService adminScope,
-                                               IUnitOfWork unitOfWork,
-                                               IUserRepository userRepository,
-                                               IIdentityProvisioningService identityProvisioning) : ICommandHandler<UpdateUserCommand, UserResponse>
+                                                 IUnitOfWork unitOfWork,
+                                                 IUserRepository userRepository) : ICommandHandler<UpdateUserCommand, UserResponse>
 {
     public async ValueTask<Result<UserResponse>> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
@@ -30,29 +28,12 @@ internal sealed class UpdateUserCommandHandler(IAdminScopeService adminScope,
 
         var user = await userRepository.GetByIdAsync(request.Id, cancellationToken);
         if (user is null || user.DeletedAt is not null)
-            return Error.NotFound("user.not_found", $"Usuario {request.Id} no encontrado.");
+            return UserErrors.NotFound(request.Id);
 
         if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase) &&
             await userRepository.EmailExistsAsync(request.Email, cancellationToken))
         {
-            return Error.Conflict("user.email_exists", "Ya existe un usuario con ese email.");
-        }
-
-        if (user.ExternalId.HasValue)
-        {
-            try
-            {
-                await identityProvisioning.UpdateUserAsync(
-                    user.ExternalId.Value,
-                    request.Email,
-                    request.FirstName,
-                    request.LastName,
-                    cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                return Error.Failure("identity.update_failed", $"No se pudo actualizar el usuario en el proveedor de identidad: {ex.Message}");
-            }
+            return UserErrors.EmailExists();
         }
 
         user.UpdateProfile(request.Email, request.FirstName, request.LastName);

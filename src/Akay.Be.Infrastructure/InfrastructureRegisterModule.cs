@@ -1,23 +1,28 @@
 ﻿using System.Reflection;
 using Akay.Be.Application;
-using Akay.Be.Application.Abstractions.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Organization;
 using Akay.Be.Application.Abstractions.Services;
-using Akay.Be.Infrastructure.Identity;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.Be.Infrastructure.Persistence.Repositories.Academic;
 using Akay.Be.Infrastructure.Persistence.Repositories.Identity;
 using Akay.Be.Infrastructure.Persistence.Repositories.Organization;
 using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
-using Akay.To.Azure.Infrastructure.DependencyInjection;
-using Akay.To.Core.Infrastructure.DependencyInjection;
+using Akay.To.Azure.Infrastructure.BlobStorage;
+using Akay.To.Azure.Infrastructure.CognitiveServices.Speech;
+using Akay.To.Azure.Infrastructure.CognitiveServices.Translator;
+using Akay.To.Azure.Infrastructure.Identity.EntraId;
+using Akay.To.Azure.Infrastructure.SignalR;
+using Akay.To.Azure.Infrastructure.TableStorage;
+using Akay.To.Core.Infrastructure.Caching;
+using Akay.To.Core.Infrastructure.Http;
 using Akay.To.EF.SqlServer.Infrastructure.DependencyInjection;
 using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+
 
 namespace Akay.Be.Infrastructure;
 
@@ -40,8 +45,8 @@ public static class InfrastructureRegisterModule
             .AddAzureBlobStorage(settings.AzureStorageSettings)
             .AddAzureTableStorage(settings.AzureStorageSettings)
             .AddSignalR(settings.AzureSignalRSettings)
-            .AddAzureCognitiveSpeechServices()
-            .AddAzureCognitiveTranslatorServices()
+            .AddAzureCognitiveSpeechServices(settings.SpeechSettings)
+            .AddAzureCognitiveTranslatorServices(settings.TranslatorSettings)
             .AddHttpClients(settings.HttpClientSettings, settings.Application?.Name, settings.Application?.Version)
             .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!)
             .AddSqlServerEFContext<ApplicationDbContext>(settings);
@@ -65,8 +70,7 @@ public static class InfrastructureRegisterModule
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         return services
-            .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>()
-            .AddScoped<IIdentityProvisioningService, NoOpIdentityProvisioningService>();
+            .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>();
     }
     private static IServiceCollection AddRepositories(this IServiceCollection services)
     {

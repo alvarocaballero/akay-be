@@ -2,6 +2,8 @@ using System.Reflection;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Features.Auth;
 using Akay.Be.Domain.Entities.Identity;
+using Akay.Be.Domain.Events.Identity;
+using Akay.To.Core.Application.Abstractions.Outbox;
 using Akay.To.Core.Application.Abstractions.Persistence;
 using Akay.To.Core.Application.Security.Jwt;
 using Moq;
@@ -12,6 +14,7 @@ public sealed class ExchangeEntraTokenTests
 {
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<IOutboxEventWriter> _outboxEventWriter = new();
     private readonly Mock<IJwtTokenGenerator> _jwtTokenGenerator = new();
 
     [Fact]
@@ -62,6 +65,11 @@ public sealed class ExchangeEntraTokenTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("auth.exchange.user_not_found", result.Error.Code);
+        _outboxEventWriter.Verify(x => x.Enqueue(It.Is<ExternalIdentityCleanupRequestedOutboxEvent>(evt => evt.ExternalId == externalId
+                                                                                                           && evt.Email == "missing@example.com"
+                                                                                                           && evt.Reason == ExternalIdentityCleanupReasons.NoLocalUser)),
+                                  Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -100,7 +108,7 @@ public sealed class ExchangeEntraTokenTests
     }
 
     private ExchangeEntraTokenCommandHandler CreateHandler() =>
-        new(_userRepository.Object, _unitOfWork.Object, _jwtTokenGenerator.Object);
+        new(_userRepository.Object, _unitOfWork.Object, _outboxEventWriter.Object, _jwtTokenGenerator.Object);
 
     private static User CreateUser(int id,
                                    string email,

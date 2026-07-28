@@ -1,7 +1,7 @@
 using Akay.Be.Application.Definitions;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
-using Akay.To.Core.Infrastructure.Extensions;
+using Akay.To.Core.Infrastructure.Http;
 
 namespace Akay.Be.Application.Features.LearningHubs.HttpExamples;
 

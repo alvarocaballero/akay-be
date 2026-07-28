@@ -1,5 +1,6 @@
 using Akay.Be.Domain.Entities.Identity;
 using Akay.Be.Domain.Enums;
+using Akay.Be.Domain.Events.Identity;
 
 namespace Akay.Be.Domain.Tests.Entities;
 
@@ -147,5 +148,37 @@ public class UserTests
 
         var ex = Assert.Throws<ArgumentException>(() => user.SetExternalId(Guid.Empty));
         Assert.Contains("empty", ex.Message.ToLower());
+    }
+
+    [Fact]
+    public void UpdateProfile_Should_Clear_ExternalId_And_Raise_Outbox_Event_When_Email_Changes()
+    {
+        var user = User.Create("old@example.com", "Test", "User");
+        var externalId = Guid.NewGuid();
+        user.SetExternalId(externalId);
+
+        user.UpdateProfile("new@example.com", "New", "User");
+
+        Assert.Null(user.ExternalId);
+        var cleanupEvent = Assert.Single(user.AfterSaveDomainEvents.OfType<ExternalIdentityCleanupRequestedOutboxEvent>());
+        Assert.Equal(externalId, cleanupEvent.ExternalId);
+        Assert.Equal("old@example.com", cleanupEvent.Email);
+        Assert.Equal(ExternalIdentityCleanupReasons.EmailChanged, cleanupEvent.Reason);
+    }
+
+    [Fact]
+    public void SoftDelete_Should_Raise_Outbox_Event_When_ExternalId_Exists()
+    {
+        var user = User.Create("test@example.com", "Test", "User");
+        var externalId = Guid.NewGuid();
+        user.SetExternalId(externalId);
+
+        user.SoftDelete();
+
+        Assert.NotNull(user.DeletedAt);
+        var cleanupEvent = Assert.Single(user.AfterSaveDomainEvents.OfType<ExternalIdentityCleanupRequestedOutboxEvent>());
+        Assert.Equal(externalId, cleanupEvent.ExternalId);
+        Assert.Equal("test@example.com", cleanupEvent.Email);
+        Assert.Equal(ExternalIdentityCleanupReasons.LocalUserDeleted, cleanupEvent.Reason);
     }
 }
