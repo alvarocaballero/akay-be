@@ -22,10 +22,12 @@ namespace Akay.Be.Host.Controllers;
 public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
 {
     [HttpGet]
-    [EndpointSummary("Lista paginada los estudiantes de los centros administrados por el usuario actual.")]
+    [EndpointSummary("Lista paginada los estudiantes del centro indicado en el header X-Center-Id.")]
     [ProducesResponseType<PagedResponse<List<StudentResponse>>>(StatusCodes.Status200OK)]
-    public async Task<IResult> GetAll([FromQuery] GetStudentsQuery query, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(query, cancellationToken)).ToOk();
+    public async Task<IResult> GetAll([FromHeader(Name = "X-Center-Id")] int centerId,
+                                      [FromQuery] GetStudentsRequest request,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetStudentsQuery(centerId, request.Search, request.IsActive), cancellationToken)).ToOk();
 
     [HttpGet("{id:int}")]
     [EndpointSummary("Obtiene un estudiante por su ID.")]
@@ -35,12 +37,14 @@ public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
         (await dispatcher.Send(new GetStudentByIdQuery(id), cancellationToken)).ToOk();
 
     [HttpPost]
-    [EndpointSummary("Crea un perfil de estudiante en un centro administrado y le asigna el rol Student.")]
+    [EndpointSummary("Crea un perfil de estudiante en el centro indicado en el header X-Center-Id y le asigna el rol Student.")]
     [ProducesResponseType<CreatedResponse<int>>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IResult> Create([FromBody] CreateStudentCommand command, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/students/{value.Id}");
+    public async Task<IResult> Create([FromHeader(Name = "X-Center-Id")] int centerId,
+                                      [FromBody] CreateStudentCommand command,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command with { CenterId = centerId }, cancellationToken)).ToCreated(value => $"api/students/{value.Id}");
 
     [HttpPut("{id:int}")]
     [EndpointSummary("Actualiza un estudiante visible.")]

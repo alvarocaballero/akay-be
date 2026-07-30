@@ -27,10 +27,12 @@ public sealed class CoursesController(IDispatcher dispatcher) : ControllerBase
     // ─── Courses ───────────────────────────────────────────────────────────
 
     [HttpGet]
-    [EndpointSummary("Lista los cursos de los centros administrados por el usuario actual.")]
+    [EndpointSummary("Lista los cursos del centro indicado en el header X-Center-Id, con filtro opcional por periodo académico.")]
     [ProducesResponseType<IReadOnlyList<CourseListResponse>>(StatusCodes.Status200OK)]
-    public async Task<IResult> GetAll(CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetCoursesQuery(), cancellationToken)).ToOk();
+    public async Task<IResult> GetAll([FromHeader(Name = "X-Center-Id")] int centerId,
+                                      [FromQuery] int? academicPeriodId,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetCoursesQuery(centerId, academicPeriodId), cancellationToken)).ToOk();
 
     [HttpGet("{id:int}")]
     [EndpointSummary("Obtiene un curso por su ID.")]

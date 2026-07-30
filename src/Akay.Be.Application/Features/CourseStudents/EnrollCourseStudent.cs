@@ -8,7 +8,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.CourseStudents;
 
-public sealed record EnrollCourseStudentCommand(int CourseId, int StudentId) : ICommand<CreatedResponse<int>>;
+public sealed record EnrollCourseStudentCommand(int CourseId, int StudentId, int[]? SubjectIds = null) : ICommand<CreatedResponse<int>>;
 
 internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService adminScope,
                                                         IUnitOfWork unitOfWork,
@@ -45,8 +45,31 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         course.EnrollStudent(request.StudentId);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var enrollment = course.Students.First(s => s.StudentId == request.StudentId && s.DeletedAt == null);
-        return new CreatedResponse<int>(enrollment.Id, enrollment.CreatedAt);
+        var studentCourse = course.Students.First(s => s.StudentId == request.StudentId && s.DeletedAt == null);
+
+        var enrolledInSubjects = false;
+        if (request.SubjectIds is null)
+        {
+            foreach (var courseSubject in course.Subjects.Where(s => s.DeletedAt == null))
+            {
+                courseSubject.EnrollStudent(studentCourse.Id);
+                enrolledInSubjects = true;
+            }
+        }
+        else if (request.SubjectIds.Length > 0)
+        {
+            var subjectIdSet = request.SubjectIds.ToHashSet();
+            foreach (var courseSubject in course.Subjects.Where(s => s.DeletedAt == null && subjectIdSet.Contains(s.SubjectId)))
+            {
+                courseSubject.EnrollStudent(studentCourse.Id);
+                enrolledInSubjects = true;
+            }
+        }
+
+        if (enrolledInSubjects)
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new CreatedResponse<int>(studentCourse.Id, studentCourse.CreatedAt);
     }
 }
 
@@ -56,5 +79,6 @@ public sealed class EnrollCourseStudentCommandValidator : AbstractValidator<Enro
     {
         RuleFor(x => x.CourseId).GreaterThan(0);
         RuleFor(x => x.StudentId).GreaterThan(0);
+        When(x => x.SubjectIds is not null, () => RuleForEach(x => x.SubjectIds).GreaterThan(0));
     }
 }

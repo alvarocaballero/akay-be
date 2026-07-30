@@ -7,12 +7,13 @@ using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.Students;
 
-public sealed record GetStudentsQuery : PagedQuery<List<StudentResponse>>
+public sealed record GetStudentsRequest : PagedQuery<List<StudentResponse>>
 {
-    public IReadOnlyCollection<int>? CenterIds { get; init; }
     public string? Search { get; init; }
     public bool? IsActive { get; init; }
 }
+
+public sealed record GetStudentsQuery(int CenterId, string? Search, bool? IsActive) : PagedQuery<List<StudentResponse>>;
 
 internal sealed class GetStudentsQueryHandler(IAdminScopeService adminScope,
                                               IStudentRepository studentRepository) : IQueryHandler<GetStudentsQuery, PagedResponse<List<StudentResponse>>>
@@ -21,21 +22,14 @@ internal sealed class GetStudentsQueryHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var adminCenters = await adminScope.GetAdminCenterIdsAsync(cancellationToken);
-        if (adminCenters.Count == 0)
-        {
+        var access = await adminScope.EnsureAdminOrTeacherOfCenterAsync(request.CenterId, cancellationToken);
+        if (access.IsFailure)
             return PagedResponse<List<StudentResponse>>.Create([],
                                                                request.PageSize,
                                                                request.Page ?? 1,
                                                                false);
-        }
 
-        var requestedCenterIds = request.CenterIds?.ToHashSet();
-        if (requestedCenterIds is not null && requestedCenterIds.Count > 0 && !requestedCenterIds.IsSubsetOf(adminCenters))
-            return Error.Forbidden("admin.forbidden", "No tienes permisos sobre algunos de los centros solicitados.");
-
-        var filter = new StudentListFilter(adminCenters,
-                                           requestedCenterIds,
+        var filter = new StudentListFilter(new HashSet<int> { request.CenterId },
                                            request.Search,
                                            request.IsActive);
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Entities.Academic;
@@ -9,7 +10,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.AcademicPeriods;
 
-public sealed record CreateAcademicPeriodCommand(int CenterId, string Name, DateOnly StartDate, DateOnly EndDate) : ICommand<CreatedResponse<int>>;
+public sealed record CreateAcademicPeriodCommand([property: JsonIgnore] int CenterId, string Name, DateOnly StartDate, DateOnly EndDate) : ICommand<CreatedResponse<int>>;
 
 internal sealed class CreateAcademicPeriodCommandHandler(IAdminScopeService adminScope,
                                                          IPersistenceResultExecutor persistence,

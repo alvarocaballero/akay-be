@@ -14,13 +14,13 @@ internal sealed class GetAcademicPeriodByIdQueryHandler(IAdminScopeService admin
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessAcademicPeriodAsync(request.Id, cancellationToken);
-        if (access.IsFailure)
-            return access.Error;
-
         var period = await academicPeriodRepository.GetByIdAsync(request.Id, cancellationToken);
         if (period is null || period.DeletedAt is not null)
             return Error.NotFound("academicperiod.not_found", $"Periodo académico {request.Id} no encontrado.");
+
+        var hasAccess = await adminScope.EnsureAdminOrTeacherOfCenterAsync(period.CenterId, cancellationToken);
+        if (hasAccess.IsFailure)
+            return Error.Forbidden("academicperiod.forbidden", $"No tienes permisos sobre el periodo académico {request.Id}.");
 
         return new AcademicPeriodResponse(period.Id, period.CenterId, period.Name, period.StartDate, period.EndDate, period.IsActive);
     }

@@ -194,7 +194,7 @@ public class AdminAcademicIntegrationTests
         ctx.Students.Add(Student.Create(users[2], 3, "S003"));
         await ctx.SaveChangesAsync(ct);
 
-        var filter = new StudentListFilter(new HashSet<int> { 1, 3 }, null, null, null);
+        var filter = new StudentListFilter(new HashSet<int> { 1, 3 }, null, null);
         var pageRequest = new PageRequest(1, 10, null, null);
 
         var result = await repo.GetPagedByAdminScopeAsync(filter, pageRequest, ct);
@@ -215,7 +215,7 @@ public class AdminAcademicIntegrationTests
         ctx.Students.Add(Student.Create(users[2], 3, "S003"));
         await ctx.SaveChangesAsync(ct);
 
-        var filter = new StudentListFilter(new HashSet<int> { 1, 2, 3 }, new HashSet<int> { 2 }, null, null);
+        var filter = new StudentListFilter(new HashSet<int> { 2 }, null, null);
         var pageRequest = new PageRequest(1, 10, null, null);
 
         var result = await repo.GetPagedByAdminScopeAsync(filter, pageRequest, ct);
@@ -236,7 +236,7 @@ public class AdminAcademicIntegrationTests
         ctx.Students.Add(Student.Create(users[1], 2, "S002"));
         await ctx.SaveChangesAsync(ct);
 
-        var filter = new StudentListFilter(new HashSet<int> { 1, 2 }, null, "S002", null);
+        var filter = new StudentListFilter(new HashSet<int> { 1, 2 }, "S002", null);
         var pageRequest = new PageRequest(1, 10, null, null);
 
         var result = await repo.GetPagedByAdminScopeAsync(filter, pageRequest, ct);
@@ -258,7 +258,7 @@ public class AdminAcademicIntegrationTests
         ctx.Students.Add(Student.Create(users[2], 1, "S003"));
         await ctx.SaveChangesAsync(ct);
 
-        var filter = new StudentListFilter(new HashSet<int> { 1 }, null, null, null);
+        var filter = new StudentListFilter(new HashSet<int> { 1 }, null, null);
         var pageRequest = new PageRequest(1, 2, null, null);
 
         var result = await repo.GetPagedByAdminScopeAsync(filter, pageRequest, ct);

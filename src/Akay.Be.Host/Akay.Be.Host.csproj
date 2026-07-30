@@ -8,16 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
 	<ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
 	<ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Design">
-	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-	  <PrivateAssets>all</PrivateAssets>
-	</PackageReference>
+	<PackageReference Include="Akay.To.Azure" />
   </ItemGroup>
 
   <ItemGroup>

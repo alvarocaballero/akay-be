@@ -15,6 +15,7 @@ public sealed class ApplicationDbContext(IUserContext userContext,
 {
     public DbSet<Center> Centers => Set<Center>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
     public DbSet<AcademicPeriod> AcademicPeriods => Set<AcademicPeriod>();
     public DbSet<Course> Courses => Set<Course>();

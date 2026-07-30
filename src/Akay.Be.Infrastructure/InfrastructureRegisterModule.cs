@@ -10,10 +10,9 @@ using Akay.Be.Infrastructure.Persistence.Repositories.Identity;
 using Akay.Be.Infrastructure.Persistence.Repositories.Organization;
 using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
+using Akay.To.AI.Infrastructure.CognitiveServices.Speech;
+using Akay.To.AI.Infrastructure.CognitiveServices.Translator;
 using Akay.To.Azure.Infrastructure.BlobStorage;
-using Akay.To.Azure.Infrastructure.CognitiveServices.Speech;
-using Akay.To.Azure.Infrastructure.CognitiveServices.Translator;
-using Akay.To.Azure.Infrastructure.Identity.EntraId;
 using Akay.To.Azure.Infrastructure.SignalR;
 using Akay.To.Azure.Infrastructure.TableStorage;
 using Akay.To.Core.Infrastructure.Caching;
@@ -34,8 +33,7 @@ public static class InfrastructureRegisterModule
     /// <param name="services"></param>
     /// <param name="settings"></param>
     /// <returns></returns>
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
-                                                               ApplicationSettings? settings)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ApplicationSettings? settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 

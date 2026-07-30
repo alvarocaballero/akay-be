@@ -17,27 +17,39 @@ internal sealed class AdminScopeService(IUserContext userContext,
     private const string ForbiddenCode = "admin.forbidden";
     private const string NotFoundCode = "admin.not_found";
 
+
     public async Task<IReadOnlySet<int>> GetAdminCenterIdsAsync(CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
+        => await GetRolesCenterIdsAsync(UserRole.Admin, cancellationToken);
 
-        var currentUserId = userContext.UserId;
-        if (currentUserId <= 0)
-            return new HashSet<int>();
+    public async Task<IReadOnlySet<int>> GetTeacherCenterIdsAsync(CancellationToken cancellationToken = default)
+        => await GetRolesCenterIdsAsync(UserRole.Teacher, cancellationToken);
 
-        var rolesByCenter = await userRepository.GetUserRolesByCentersAsync(currentUserId, cancellationToken);
-        return rolesByCenter
-            .Where(kv => kv.Value.Contains(UserRole.Admin))
-            .Select(kv => kv.Key)
-            .ToHashSet();
-    }
+    public async Task<IReadOnlySet<int>> GetAdminOrTeacherCenterIdsAsync(CancellationToken cancellationToken = default)
+        => await GetRolesCenterIdsAsync(UserRole.Admin, cancellationToken);
 
     public async Task<Result> EnsureAdminOfCenterAsync(int centerId, CancellationToken cancellationToken = default)
     {
-        var adminCenters = await GetAdminCenterIdsAsync(cancellationToken);
-        return adminCenters.Contains(centerId)
+        var centers = await GetAdminCenterIdsAsync(cancellationToken);
+        return centers.Contains(centerId)
             ? Result.Success()
             : Error.Forbidden(ForbiddenCode, $"No tienes permisos de administrador sobre el centro {centerId}.");
+    }
+
+
+    public async Task<Result> EnsureTeacherOfCenterAsync(int centerId, CancellationToken cancellationToken = default)
+    {
+        var centers = await GetTeacherCenterIdsAsync(cancellationToken);
+        return centers.Contains(centerId)
+            ? Result.Success()
+            : Error.Forbidden(ForbiddenCode, $"No tienes permisos de profesor sobre el centro {centerId}.");
+    }
+
+    public async Task<Result> EnsureAdminOrTeacherOfCenterAsync(int centerId, CancellationToken cancellationToken = default)
+    {
+        var centers = await GetAdminOrTeacherCenterIdsAsync(cancellationToken);
+        return centers.Contains(centerId)
+            ? Result.Success()
+            : Error.Forbidden(ForbiddenCode, $"No tienes permisos de admin, ni de profesor sobre el centro {centerId}.");
     }
 
     public async Task<Result> EnsureAdminOfAllCentersAsync(IEnumerable<int> centerIds, CancellationToken cancellationToken = default)
@@ -127,4 +139,21 @@ internal sealed class AdminScopeService(IUserContext userContext,
         cancellationToken.ThrowIfCancellationRequested();
         return await userRepository.UserHasActiveRoleInCenterAsync(userId, centerId, role, cancellationToken);
     }
+
+    private async Task<IReadOnlySet<int>> GetRolesCenterIdsAsync(UserRole? role, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var currentUserId = userContext.UserId;
+        if (currentUserId <= 0)
+            return new HashSet<int>();
+
+        var rolesByCenter = await userRepository.GetUserRolesByCentersAsync(currentUserId, cancellationToken);
+        return rolesByCenter
+            .Where(kv => role is null || kv.Value.Contains(role.Value))
+            .Select(kv => kv.Key)
+            .ToHashSet();
+    }
+
+
 }

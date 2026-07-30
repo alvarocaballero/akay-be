@@ -27,6 +27,12 @@ public sealed class SubjectsController(IDispatcher dispatcher) : ControllerBase
     public async Task<IResult> GetAll(CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetSubjectsQuery(), cancellationToken)).ToOk();
 
+    [HttpGet("center")]
+    [EndpointSummary("Lista las asignaturas del centro indicado en el header X-Center-Id.")]
+    [ProducesResponseType<IReadOnlyList<SubjectResponse>>(StatusCodes.Status200OK)]
+    public async Task<IResult> GetByCenter([FromHeader(Name = "X-Center-Id")] int centerId, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetSubjectsQuery { CenterId = centerId }, cancellationToken)).ToOk();
+
     [HttpGet("{id:int}")]
     [EndpointSummary("Obtiene una asignatura por su ID.")]
     [ProducesResponseType<SubjectResponse>(StatusCodes.Status200OK)]

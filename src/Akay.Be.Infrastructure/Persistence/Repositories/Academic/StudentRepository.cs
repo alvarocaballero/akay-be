@@ -38,11 +38,7 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
 #pragma warning restore S3776
         StudentListFilter filter, PageRequest pageRequest, CancellationToken cancellationToken = default)
     {
-        var effectiveCenterIds = filter.CenterIds is null || filter.CenterIds.Count == 0
-            ? filter.AdminCenterIds
-            : filter.CenterIds.Intersect(filter.AdminCenterIds).ToHashSet();
-
-        var query = Set.ApplySpecification(StudentSpecifications.ByCenterIds(effectiveCenterIds));
+        var query = Set.ApplySpecification(StudentSpecifications.ByCenterIds(filter.CenterIds));
 
         if (filter.IsActive.HasValue)
         {

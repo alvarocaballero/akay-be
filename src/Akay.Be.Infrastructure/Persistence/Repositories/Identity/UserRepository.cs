@@ -1,6 +1,7 @@
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Features.Users;
 using Akay.Be.Domain.Entities.Identity;
+using Akay.Be.Domain.Entities.Organization;
 using Akay.Be.Domain.Enums;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.To.Core.Application.Requests;
@@ -18,16 +19,19 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
     public async Task<User?> GetByExternalIdAsync(Guid externalId, CancellationToken cancellationToken = default)
         => await Set
             .Include(x => x.RoleAssignments)
+            //.Include(x => x.Profile)
             .FirstOrDefaultAsync(x => x.ExternalId == externalId, cancellationToken);
 
     public override async Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         => await Set
             .Include(x => x.RoleAssignments)
+            //.Include(x => x.Profile)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         => await Set
             .Include(x => x.RoleAssignments)
+            //.Include(x => x.Profile)
             .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -95,5 +99,21 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
         return await query
             .ApplyOrdering(pageRequest.SortBy, pageRequest.IsAscending, sortMap, (q, asc) => asc ? q.OrderBy(x => x.Id) : q.OrderByDescending(x => x.Id))
             .ToPagedResponseAsync(pageRequest.Page, pageRequest.PageSize, cancellationToken: cancellationToken);
+    }
+
+    public async Task<List<Center>> GetDistinctCentersByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var centerIds = await context.Set<UserRoleAssignment>()
+            .Where(x => x.UserId == userId && x.CenterId != null && x.DeletedAt == null)
+            .Select(x => x.CenterId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (centerIds.Count == 0)
+            return [];
+
+        return await context.Set<Center>()
+            .Where(c => centerIds.Contains(c.Id) && c.DeletedAt == null)
+            .ToListAsync(cancellationToken);
     }
 }

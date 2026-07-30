@@ -13,9 +13,29 @@ public interface IAdminScopeService
     Task<IReadOnlySet<int>> GetAdminCenterIdsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Devuelve los IDs de los centros donde el usuario actual tiene rol Teacher.
+    /// </summary>
+    Task<IReadOnlySet<int>> GetTeacherCenterIdsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Devuelve los IDs de los centros donde el usuario actual tiene rol Admin o Teacher.
+    /// </summary>
+    Task<IReadOnlySet<int>> GetAdminOrTeacherCenterIdsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Verifica que el usuario actual sea admin del centro indicado.
     /// </summary>
     Task<Result> EnsureAdminOfCenterAsync(int centerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifica que el usuario actual sea teacher del centro indicado.
+    /// </summary>
+    Task<Result> EnsureTeacherOfCenterAsync(int centerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifica que el usuario actual sea admin o teacher del centro indicado.
+    /// </summary>
+    Task<Result> EnsureAdminOrTeacherOfCenterAsync(int centerId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifica que el usuario actual sea admin de todos los centros indicados.
@@ -52,4 +72,5 @@ public interface IAdminScopeService
     /// Verifica que el usuario objetivo tenga el rol especificado en el centro indicado.
     /// </summary>
     Task<bool> UserHasRoleInCenterAsync(int userId, int centerId, Domain.Enums.UserRole role, CancellationToken cancellationToken = default);
+
 }

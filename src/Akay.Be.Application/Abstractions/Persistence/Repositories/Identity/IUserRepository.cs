@@ -1,5 +1,6 @@
 using Akay.Be.Application.Features.Users;
 using Akay.Be.Domain.Entities.Identity;
+using Akay.Be.Domain.Entities.Organization;
 using Akay.Be.Domain.Enums;
 using Akay.To.Core.Application.Abstractions.Persistence;
 using Akay.To.Core.Application.Requests;
@@ -19,8 +20,9 @@ public interface IUserRepository : IBaseRepository<User, int>
 
     Task<List<User>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default);
 
-    Task<PagedResponse<List<User>>> GetPagedByAdminScopeAsync(
-        UserListFilter filter,
-        PageRequest pageRequest,
-        CancellationToken cancellationToken = default);
+    Task<PagedResponse<List<User>>> GetPagedByAdminScopeAsync(UserListFilter filter,
+                                                              PageRequest pageRequest,
+                                                              CancellationToken cancellationToken = default);
+
+    Task<List<Center>> GetDistinctCentersByUserIdAsync(int userId, CancellationToken cancellationToken = default);
 }

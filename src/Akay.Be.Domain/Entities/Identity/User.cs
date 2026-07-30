@@ -21,6 +21,7 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
     public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
+    public UserProfile? Profile { get; private set; }
     public IReadOnlyCollection<UserRoleAssignment> RoleAssignments => _roleAssignments.AsReadOnly();
 
     public static User Create(string email, string firstName, string lastName)
@@ -121,5 +122,18 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
             throw new ArgumentException("ExternalId cannot be empty.", nameof(externalId));
 
         ExternalId = externalId;
+    }
+
+    public UserProfile EnsureProfile(string language, bool darkMode)
+    {
+        if (Profile is not null)
+        {
+            Profile.UpdateLanguage(language);
+            Profile.UpdateDarkMode(darkMode);
+            return Profile;
+        }
+
+        Profile = UserProfile.Create(Id, language, darkMode);
+        return Profile;
     }
 }

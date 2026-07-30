@@ -15,19 +15,20 @@ namespace Akay.Be.Host.Controllers;
 [ApiController]
 [Route("api/academic-periods")]
 [Tags("AcademicPeriods")]
-[Authorize]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 public sealed class AcademicPeriodsController(IDispatcher dispatcher) : ControllerBase
 {
     [HttpGet]
-    [EndpointSummary("Lista los periodos académicos de los centros administrados por el usuario actual.")]
+    [Authorize(Roles = "admin,teacher")]
+    [EndpointSummary("Lista los periodos académicos del centro indicado en el header X-Center-Id.")]
     [ProducesResponseType<IReadOnlyList<AcademicPeriodResponse>>(StatusCodes.Status200OK)]
-    public async Task<IResult> GetAll(CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetAcademicPeriodsQuery(), cancellationToken)).ToOk();
+    public async Task<IResult> GetAll([FromHeader(Name = "X-Center-Id")] int centerId, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetAcademicPeriodsQuery(centerId), cancellationToken)).ToOk();
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "admin,teacher")]
     [EndpointSummary("Obtiene un periodo académico por su ID.")]
     [ProducesResponseType<AcademicPeriodResponse>(StatusCodes.Status200OK)]//&
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,14 +36,18 @@ public sealed class AcademicPeriodsController(IDispatcher dispatcher) : Controll
         (await dispatcher.Send(new GetAcademicPeriodByIdQuery(id), cancellationToken)).ToOk();
 
     [HttpPost]
-    [EndpointSummary("Crea un periodo académico en un centro administrado.")]
+    [Authorize(Roles = "admin")]
+    [EndpointSummary("Crea un periodo académico en el centro indicado en el header X-Center-Id.")]
     [ProducesResponseType<CreatedResponse<int>>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IResult> Create([FromBody] CreateAcademicPeriodCommand command, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(command, cancellationToken)).ToCreated(value => $"api/academic-periods/{value.Id}");
+    public async Task<IResult> Create([FromHeader(Name = "X-Center-Id")] int centerId,
+                                      [FromBody] CreateAcademicPeriodCommand command,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command with { CenterId = centerId }, cancellationToken)).ToCreated(value => $"api/academic-periods/{value.Id}");
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "admin")]
     [EndpointSummary("Actualiza un periodo académico visible.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,6 +56,7 @@ public sealed class AcademicPeriodsController(IDispatcher dispatcher) : Controll
         (await dispatcher.Send(command with { Id = id }, cancellationToken)).ToNoContent();
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "admin")]
     [EndpointSummary("Elimina un periodo académico visible (soft-delete).")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

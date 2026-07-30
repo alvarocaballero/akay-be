@@ -3,17 +3,14 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Akay.To.Azure" Version="1.0.2" />
-    <PackageVersion Include="Akay.To.Core" Version="1.1.2" />
-    <PackageVersion Include="Akay.To.EF.SqlServer" Version="1.0.2" />
-    <PackageVersion Include="Akay.To.Messaging.Rebus" Version="1.0.2" />
+    <PackageVersion Include="Akay.To.AI" Version="0.0.3" />
+    <PackageVersion Include="Akay.To.Azure" Version="1.0.5" />
+    <PackageVersion Include="Akay.To.Core" Version="1.1.5" />
+    <PackageVersion Include="Akay.To.EF.SqlServer" Version="1.0.4" />
+    <PackageVersion Include="Akay.To.Messaging.Rebus" Version="1.0.4" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <!--<PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />-->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
