@@ -18,7 +18,7 @@ internal sealed class UpdateSubjectCommandHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessSubjectAsync(request.Id, cancellationToken);
+        var access = await adminScope.EnsureCanWriteSubjectAsync(request.Id, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

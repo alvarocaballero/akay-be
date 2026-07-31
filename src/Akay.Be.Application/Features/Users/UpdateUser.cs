@@ -22,7 +22,7 @@ internal sealed class UpdateUserCommandHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessUserAsync(request.Id, cancellationToken);
+        var access = await adminScope.EnsureCanWriteUserAsync(request.Id, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

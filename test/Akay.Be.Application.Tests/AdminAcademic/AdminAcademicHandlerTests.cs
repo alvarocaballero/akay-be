@@ -41,7 +41,7 @@ public class AdminAcademicHandlerTests
     public async Task AddCourseSubjectCommandHandler_ReturnsForbidden_WhenSubjectNotAvailableInCourseCenter()
     {
         var adminScope = new Mock<IAdminScopeService>();
-        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
 
         var course = Course.Create(1, "1º ESO", "ESO1");
         typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30)));
@@ -65,8 +65,7 @@ public class AdminAcademicHandlerTests
     public async Task EnrollCourseStudentCommandHandler_ReturnsForbidden_WhenStudentFromDifferentCenter()
     {
         var adminScope = new Mock<IAdminScopeService>();
-        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
-        adminScope.Setup(x => x.EnsureAdminOfCenterAsync(1, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
 
         var period = AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
         var course = Course.Create(1, "1º ESO", "ESO1");
@@ -85,13 +84,14 @@ public class AdminAcademicHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("course.student_wrong_center", result.Error.Code);
+        adminScope.Verify(x => x.EnsureAdminOfCenterAsync(It.IsAny<int>(), Ct), Times.Never);
     }
 
     [Fact]
     public async Task UnenrollCourseStudentCommandHandler_LoadsTrackedCourseBeforeSaving()
     {
         var adminScope = new Mock<IAdminScopeService>();
-        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
 
         var course = Course.Create(1, "1º ESO", "ESO1");
         course.EnrollStudent(100);
@@ -115,7 +115,7 @@ public class AdminAcademicHandlerTests
     public async Task EnrollCourseSubjectStudentCommandHandler_ReturnsForbidden_WhenStudentNotEnrolledInCourse()
     {
         var adminScope = new Mock<IAdminScopeService>();
-        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
 
         var period = AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
         var course = Course.Create(1, "1º ESO", "ESO1");
@@ -138,7 +138,7 @@ public class AdminAcademicHandlerTests
     public async Task AssignCourseSubjectTeacherCommandHandler_ReturnsForbidden_WhenUserNotTeacherInCenter()
     {
         var adminScope = new Mock<IAdminScopeService>();
-        adminScope.Setup(x => x.EnsureCanAccessCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
         adminScope.Setup(x => x.UserHasRoleInCenterAsync(100, 1, UserRole.Teacher, Ct)).ReturnsAsync(false);
 
         var period = AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
@@ -187,5 +187,48 @@ public class AdminAcademicHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("admin.forbidden", result.Error.Code);
+        adminScope.Verify(x => x.EnsureCanWriteUserAsync(It.IsAny<int>(), Ct), Times.Never);
+    }
+
+    [Fact]
+    public async Task AssignUserRoleCommandHandler_ReturnsForbidden_WhenUserHasNoCenterInCommon()
+    {
+        var adminScope = new Mock<IAdminScopeService>();
+        adminScope.Setup(x => x.EnsureAdminOfCenterAsync(8, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteUserAsync(1, Ct))
+            .ReturnsAsync(Error.Forbidden("admin.forbidden", "No tienes permisos"));
+
+        var userRepo = new Mock<IUserRepository>();
+        var uow = new Mock<IUnitOfWork>();
+
+        var handler = new AssignUserRoleCommandHandler(adminScope.Object, uow.Object, userRepo.Object);
+        var result = await handler.Handle(new AssignUserRoleCommand(1, 8, UserRole.Teacher), Ct);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("admin.forbidden", result.Error.Code);
+        userRepo.Verify(x => x.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AssignUserRoleCommandHandler_AssignsRole_WhenUserSharesAnAdminCenter()
+    {
+        var adminScope = new Mock<IAdminScopeService>();
+        adminScope.Setup(x => x.EnsureAdminOfCenterAsync(8, Ct)).ReturnsAsync(Result.Success());
+        adminScope.Setup(x => x.EnsureCanWriteUserAsync(1, Ct)).ReturnsAsync(Result.Success());
+
+        var user = User.Create("user@example.com", "First", "Last");
+        user.AssignRole(1, UserRole.Student);
+
+        var userRepo = new Mock<IUserRepository>();
+        userRepo.Setup(x => x.GetByIdAsync(1, Ct)).ReturnsAsync(user);
+
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.SaveChangesAsync(Ct)).ReturnsAsync(1);
+
+        var handler = new AssignUserRoleCommandHandler(adminScope.Object, uow.Object, userRepo.Object);
+        var result = await handler.Handle(new AssignUserRoleCommand(1, 8, UserRole.Teacher), Ct);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(user.RoleAssignments, x => x.CenterId == 8 && x.Role == UserRole.Teacher);
     }
 }

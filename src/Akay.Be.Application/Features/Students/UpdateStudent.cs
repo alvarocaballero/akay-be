@@ -18,7 +18,7 @@ internal sealed class UpdateStudentCommandHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessStudentAsync(request.Id, cancellationToken);
+        var access = await adminScope.EnsureCanWriteStudentAsync(request.Id, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

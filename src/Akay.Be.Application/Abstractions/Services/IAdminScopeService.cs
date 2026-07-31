@@ -3,7 +3,7 @@ using Akay.To.Core.Application.Results;
 namespace Akay.Be.Application.Abstractions.Services;
 
 /// <summary>
-/// Resuelve el alcance administrativo del usuario autenticado: centros donde tiene rol Admin.
+/// Resuelve el alcance administrativo del usuario autenticado.
 /// </summary>
 public interface IAdminScopeService
 {
@@ -42,35 +42,25 @@ public interface IAdminScopeService
     /// </summary>
     Task<Result> EnsureAdminOfAllCentersAsync(IEnumerable<int> centerIds, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Verifica que el usuario actual pueda acceder a un subject por tener al menos un centro admin en común.
-    /// </summary>
     Task<Result> EnsureCanAccessSubjectAsync(int subjectId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteSubjectAsync(int subjectId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanReadSubjectContentAsync(int subjectId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteSubjectContentAsync(int subjectId, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Verifica que el usuario actual pueda acceder a un academic period.
-    /// </summary>
     Task<Result> EnsureCanAccessAcademicPeriodAsync(int academicPeriodId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteAcademicPeriodAsync(int academicPeriodId, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Verifica que el usuario actual pueda acceder a un course.
-    /// </summary>
     Task<Result> EnsureCanAccessCourseAsync(int courseId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteCourseAsync(int courseId, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Verifica que el usuario actual pueda acceder a un student profile.
-    /// </summary>
     Task<Result> EnsureCanAccessStudentAsync(int studentId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteStudentAsync(int studentId, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Verifica que el usuario actual pueda acceder a un usuario objetivo
-    /// teniendo al menos un centro administrado en común con sus roles activos.
-    /// </summary>
     Task<Result> EnsureCanAccessUserAsync(int userId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteUserAsync(int userId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Verifica que el usuario objetivo tenga el rol especificado en el centro indicado.
     /// </summary>
     Task<bool> UserHasRoleInCenterAsync(int userId, int centerId, Domain.Enums.UserRole role, CancellationToken cancellationToken = default);
-
 }

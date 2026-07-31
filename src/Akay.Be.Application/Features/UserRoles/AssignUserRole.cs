@@ -26,6 +26,10 @@ internal sealed class AssignUserRoleCommandHandler(IAdminScopeService adminScope
         if (centerCheck.IsFailure)
             return centerCheck.Error;
 
+        var userAccess = await adminScope.EnsureCanWriteUserAsync(request.UserId, cancellationToken);
+        if (userAccess.IsFailure)
+            return userAccess.Error;
+
         var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user is null)
             return Error.NotFound("user.not_found", $"Usuario {request.UserId} no encontrado.");

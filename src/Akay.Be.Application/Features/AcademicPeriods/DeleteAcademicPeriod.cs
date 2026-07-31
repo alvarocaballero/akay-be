@@ -16,7 +16,7 @@ internal sealed class DeleteAcademicPeriodCommandHandler(IAdminScopeService admi
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessAcademicPeriodAsync(request.Id, cancellationToken);
+        var access = await adminScope.EnsureCanWriteAcademicPeriodAsync(request.Id, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

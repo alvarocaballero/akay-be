@@ -19,7 +19,7 @@ internal sealed class CreateCourseCommandHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessAcademicPeriodAsync(request.AcademicPeriodId, cancellationToken);
+        var access = await adminScope.EnsureCanWriteAcademicPeriodAsync(request.AcademicPeriodId, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

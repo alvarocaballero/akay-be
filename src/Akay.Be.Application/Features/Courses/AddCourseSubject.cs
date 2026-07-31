@@ -19,7 +19,7 @@ internal sealed class AddCourseSubjectCommandHandler(IAdminScopeService adminSco
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessCourseAsync(request.CourseId, cancellationToken);
+        var access = await adminScope.EnsureCanWriteCourseAsync(request.CourseId, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

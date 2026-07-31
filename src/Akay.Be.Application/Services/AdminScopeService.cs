@@ -17,7 +17,6 @@ internal sealed class AdminScopeService(IUserContext userContext,
     private const string ForbiddenCode = "admin.forbidden";
     private const string NotFoundCode = "admin.not_found";
 
-
     public async Task<IReadOnlySet<int>> GetAdminCenterIdsAsync(CancellationToken cancellationToken = default)
         => await GetRolesCenterIdsAsync(UserRole.Admin, cancellationToken);
 
@@ -25,7 +24,19 @@ internal sealed class AdminScopeService(IUserContext userContext,
         => await GetRolesCenterIdsAsync(UserRole.Teacher, cancellationToken);
 
     public async Task<IReadOnlySet<int>> GetAdminOrTeacherCenterIdsAsync(CancellationToken cancellationToken = default)
-        => await GetRolesCenterIdsAsync(UserRole.Admin, cancellationToken);
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var currentUserId = userContext.UserId;
+        if (currentUserId <= 0)
+            return new HashSet<int>();
+
+        var rolesByCenter = await userRepository.GetUserRolesByCentersAsync(currentUserId, cancellationToken);
+        return rolesByCenter
+            .Where(kv => kv.Value.Contains(UserRole.Admin) || kv.Value.Contains(UserRole.Teacher))
+            .Select(kv => kv.Key)
+            .ToHashSet();
+    }
 
     public async Task<Result> EnsureAdminOfCenterAsync(int centerId, CancellationToken cancellationToken = default)
     {
@@ -34,7 +45,6 @@ internal sealed class AdminScopeService(IUserContext userContext,
             ? Result.Success()
             : Error.Forbidden(ForbiddenCode, $"No tienes permisos de administrador sobre el centro {centerId}.");
     }
-
 
     public async Task<Result> EnsureTeacherOfCenterAsync(int centerId, CancellationToken cancellationToken = default)
     {
@@ -66,78 +76,127 @@ internal sealed class AdminScopeService(IUserContext userContext,
             : Error.Forbidden(ForbiddenCode, $"No tienes permisos de administrador sobre los centros: {string.Join(", ", missing)}.");
     }
 
-    public async Task<Result> EnsureCanAccessSubjectAsync(int subjectId, CancellationToken cancellationToken = default)
+    public Task<Result> EnsureCanAccessSubjectAsync(int subjectId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(subjectId,
+                                     async (id, ct) => (await subjectRepository.GetWithCentersAsync(id, ct))?.Centers
+                                         .Select(x => x.CenterId)
+                                         .ToHashSet(),
+                                     false,
+                                     "Asignatura",
+                                     cancellationToken);
+
+    public Task<Result> EnsureCanWriteSubjectAsync(int subjectId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(subjectId,
+                                     async (id, ct) => (await subjectRepository.GetWithCentersAsync(id, ct))?.Centers
+                                         .Select(x => x.CenterId)
+                                         .ToHashSet(),
+                                     true,
+                                     "Asignatura",
+                                     cancellationToken);
+
+    public Task<Result> EnsureCanReadSubjectContentAsync(int subjectId, CancellationToken cancellationToken = default)
+        => EnsureCanAccessSubjectAsync(subjectId, cancellationToken);
+
+    public async Task<Result> EnsureCanWriteSubjectContentAsync(int subjectId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var subject = await subjectRepository.GetWithCentersAsync(subjectId, cancellationToken);
+        var subject = await subjectRepository.GetWithAdminsAsync(subjectId, cancellationToken);
         if (subject is null)
             return Error.NotFound(NotFoundCode, $"Asignatura {subjectId} no encontrada.");
 
-        var adminCenters = await GetAdminCenterIdsAsync(cancellationToken);
-        var subjectCenters = subject.Centers.Select(c => c.CenterId).ToHashSet();
-
-        return subjectCenters.Overlaps(adminCenters)
+        return subject.Admins.Any(x => x.UserId == userContext.UserId)
             ? Result.Success()
-            : Error.Forbidden(ForbiddenCode, $"No tienes permisos de administrador sobre la asignatura {subjectId}.");
+            : Error.Forbidden(ForbiddenCode, $"No tienes permisos para modificar el contenido de la asignatura {subjectId}.");
     }
 
-    public async Task<Result> EnsureCanAccessAcademicPeriodAsync(int academicPeriodId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
+    public Task<Result> EnsureCanAccessAcademicPeriodAsync(int academicPeriodId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(academicPeriodId, async (id, ct) =>
+        {
+            var period = await academicPeriodRepository.GetByIdAsync(id, ct);
+            return period is null ? null : [period.CenterId];
+        }, false, "Periodo académico", cancellationToken);
 
-        var period = await academicPeriodRepository.GetByIdAsync(academicPeriodId, cancellationToken);
-        if (period is null)
-            return Error.NotFound(NotFoundCode, $"Periodo académico {academicPeriodId} no encontrado.");
+    public Task<Result> EnsureCanWriteAcademicPeriodAsync(int academicPeriodId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(academicPeriodId, async (id, ct) =>
+        {
+            var period = await academicPeriodRepository.GetByIdAsync(id, ct);
+            return period is null ? null : [period.CenterId];
+        }, true, "Periodo académico", cancellationToken);
 
-        return await EnsureAdminOfCenterAsync(period.CenterId, cancellationToken);
-    }
+    public Task<Result> EnsureCanAccessCourseAsync(int courseId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(courseId, async (id, ct) =>
+        {
+            var centerId = await courseRepository.GetCenterIdAsync(id, ct);
+            return centerId is null ? null : [centerId.Value];
+        }, false, "Curso", cancellationToken);
 
-    public async Task<Result> EnsureCanAccessCourseAsync(int courseId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
+    public Task<Result> EnsureCanWriteCourseAsync(int courseId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(courseId, async (id, ct) =>
+        {
+            var centerId = await courseRepository.GetCenterIdAsync(id, ct);
+            return centerId is null ? null : [centerId.Value];
+        }, true, "Curso", cancellationToken);
 
-        var centerId = await courseRepository.GetCenterIdAsync(courseId, cancellationToken);
-        if (!centerId.HasValue)
-            return Error.NotFound(NotFoundCode, $"Curso {courseId} no encontrado.");
+    public Task<Result> EnsureCanAccessStudentAsync(int studentId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(studentId, async (id, ct) =>
+        {
+            var student = await studentRepository.GetByIdAsync(id, ct);
+            return student is null ? null : [student.CenterId];
+        }, false, "Estudiante", cancellationToken);
 
-        return await EnsureAdminOfCenterAsync(centerId.Value, cancellationToken);
-    }
+    public Task<Result> EnsureCanWriteStudentAsync(int studentId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(studentId, async (id, ct) =>
+        {
+            var student = await studentRepository.GetByIdAsync(id, ct);
+            return student is null ? null : [student.CenterId];
+        }, true, "Estudiante", cancellationToken);
 
-    public async Task<Result> EnsureCanAccessStudentAsync(int studentId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
+    public Task<Result> EnsureCanAccessUserAsync(int userId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(userId, async (id, ct) =>
+        {
+            var user = await userRepository.GetByIdAsync(id, ct);
+            return user?.RoleAssignments
+                .Where(x => x.CenterId.HasValue)
+                .Select(x => x.CenterId!.Value)
+                .ToHashSet();
+        }, true, "Usuario", cancellationToken);
 
-        var student = await studentRepository.GetByIdAsync(studentId, cancellationToken);
-        if (student is null)
-            return Error.NotFound(NotFoundCode, $"Estudiante {studentId} no encontrado.");
-
-        return await EnsureAdminOfCenterAsync(student.CenterId, cancellationToken);
-    }
-
-    public async Task<Result> EnsureCanAccessUserAsync(int userId, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-            return Error.NotFound(NotFoundCode, $"Usuario {userId} no encontrado.");
-
-        var adminCenters = await GetAdminCenterIdsAsync(cancellationToken);
-        var userCenterIds = user.RoleAssignments
-            .Where(r => r.CenterId.HasValue)
-            .Select(r => r.CenterId!.Value)
-            .ToHashSet();
-
-        return userCenterIds.Overlaps(adminCenters)
-            ? Result.Success()
-            : Error.Forbidden(ForbiddenCode, $"No tienes permisos de administrador sobre el usuario {userId}.");
-    }
+    public Task<Result> EnsureCanWriteUserAsync(int userId, CancellationToken cancellationToken = default)
+        => EnsureResourceAccessAsync(userId, async (id, ct) =>
+        {
+            var user = await userRepository.GetByIdAsync(id, ct);
+            return user?.RoleAssignments
+                .Where(x => x.CenterId.HasValue)
+                .Select(x => x.CenterId!.Value)
+                .ToHashSet();
+        }, true, "Usuario", cancellationToken);
 
     public async Task<bool> UserHasRoleInCenterAsync(int userId, int centerId, UserRole role, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return await userRepository.UserHasActiveRoleInCenterAsync(userId, centerId, role, cancellationToken);
+    }
+
+    private async Task<Result> EnsureResourceAccessAsync(int resourceId,
+                                                         Func<int, CancellationToken, Task<HashSet<int>?>> getResourceCenterIds,
+                                                         bool isWrite,
+                                                         string resourceName,
+                                                         CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var resourceCenterIds = await getResourceCenterIds(resourceId, cancellationToken);
+        if (resourceCenterIds is null)
+            return Error.NotFound(NotFoundCode, $"{resourceName} {resourceId} no encontrado.");
+
+        var userCenters = isWrite
+            ? await GetAdminCenterIdsAsync(cancellationToken)
+            : await GetAdminOrTeacherCenterIdsAsync(cancellationToken);
+
+        return resourceCenterIds.Overlaps(userCenters)
+            ? Result.Success()
+            : Error.Forbidden(ForbiddenCode, $"No tienes permisos sobre {resourceName} {resourceId}.");
     }
 
     private async Task<IReadOnlySet<int>> GetRolesCenterIdsAsync(UserRole? role, CancellationToken cancellationToken = default)
@@ -154,6 +213,4 @@ internal sealed class AdminScopeService(IUserContext userContext,
             .Select(kv => kv.Key)
             .ToHashSet();
     }
-
-
 }

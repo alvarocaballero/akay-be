@@ -19,7 +19,7 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessCourseAsync(request.CourseId, cancellationToken);
+        var access = await adminScope.EnsureCanWriteCourseAsync(request.CourseId, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 
@@ -27,18 +27,11 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         if (course is null || course.DeletedAt is not null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
-        var centerId = course.AcademicPeriod.CenterId;
-
-        var adminCheck = await adminScope.EnsureAdminOfCenterAsync(centerId, cancellationToken);
-        if (adminCheck.IsFailure)
-            return adminCheck.Error;
-
-
         var student = await studentRepository.GetByIdAsync(request.StudentId, cancellationToken);
         if (student is null || student.DeletedAt is not null)
             return Error.NotFound("student.not_found", $"Estudiante {request.StudentId} no encontrado.");
 
-        if (student.CenterId != centerId)
+        if (student.CenterId != course.AcademicPeriod.CenterId)
             return Error.Forbidden("course.student_wrong_center", "El estudiante debe pertenecer al mismo centro que el curso.");
 
 

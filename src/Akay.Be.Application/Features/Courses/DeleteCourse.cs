@@ -16,7 +16,7 @@ internal sealed class DeleteCourseCommandHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessCourseAsync(request.Id, cancellationToken);
+        var access = await adminScope.EnsureCanWriteCourseAsync(request.Id, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 

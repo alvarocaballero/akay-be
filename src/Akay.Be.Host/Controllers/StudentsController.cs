@@ -46,6 +46,15 @@ public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
                                       CancellationToken cancellationToken) =>
         (await dispatcher.Send(command with { CenterId = centerId }, cancellationToken)).ToCreated(value => $"api/students/{value.Id}");
 
+    [HttpGet("{id:int}/details")]
+    [EndpointSummary("Obtiene los datos de un estudiante con los cursos en los que está matriculado y sus asignaturas, filtrados por el centro del header X-Center-Id.")]
+    [ProducesResponseType<StudentDetailResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetDetails(int id,
+                                          [FromHeader(Name = "X-Center-Id")] int centerId,
+                                          CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetStudentDetailsQuery(id, centerId), cancellationToken)).ToOk();
+
     [HttpPut("{id:int}")]
     [EndpointSummary("Actualiza un estudiante visible.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

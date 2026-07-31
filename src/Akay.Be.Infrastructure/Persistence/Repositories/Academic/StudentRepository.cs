@@ -33,10 +33,9 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
                                              x.User.Email))
             .FirstOrDefaultAsync(cancellationToken);
 
-#pragma warning disable S3776
-    public async Task<PagedResponse<List<StudentResponse>>> GetPagedByAdminScopeAsync(
-#pragma warning restore S3776
-        StudentListFilter filter, PageRequest pageRequest, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<List<StudentResponse>>> GetPagedByAdminScopeAsync(StudentListFilter filter,
+                                                                                      PageRequest pageRequest,
+                                                                                      CancellationToken cancellationToken = default)
     {
         var query = Set.ApplySpecification(StudentSpecifications.ByCenterIds(filter.CenterIds));
 
@@ -118,4 +117,32 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.CenterId == centerId, cancellationToken);
 
+    public async Task<StudentDetailResponse?> GetStudentDetailsAsync(int studentId, int centerId, CancellationToken cancellationToken = default)
+        => await Set
+            .AsNoTracking()
+            .Where(student => student.Id == studentId)
+            .Select(student => new StudentDetailResponse(
+                student.Id,
+                student.UserId,
+                student.CenterId,
+                student.StudentNumber,
+                student.IsActive,
+                student.User.FirstName,
+                student.User.LastName,
+                student.User.Email,
+                context.StudentCourses
+                    .Where(studentCourse => studentCourse.StudentId == student.Id
+                                         && studentCourse.Course.AcademicPeriod.CenterId == centerId)
+                    .Select(studentCourse => new EnrolledCourseResponse(
+                        studentCourse.CourseId,
+                        studentCourse.Course.Name,
+                        studentCourse.Course.Code,
+                        context.CourseSubjectStudents
+                            .Where(enrollment => enrollment.StudentCourseId == studentCourse.Id)
+                            .Select(enrollment => new EnrolledSubjectResponse(
+                                enrollment.CourseSubject.SubjectId,
+                                enrollment.CourseSubject.Subject.Name))
+                            .ToList()))
+                    .ToList()))
+            .FirstOrDefaultAsync(cancellationToken);
 }

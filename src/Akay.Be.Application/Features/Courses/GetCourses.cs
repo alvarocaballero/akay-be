@@ -14,7 +14,7 @@ internal sealed class GetCoursesQueryHandler(IAdminScopeService adminScope,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var adminCheck = await adminScope.EnsureAdminOfCenterAsync(request.CenterId, cancellationToken);
+        var adminCheck = await adminScope.EnsureAdminOrTeacherOfCenterAsync(request.CenterId, cancellationToken);
         if (adminCheck.IsFailure)
             return adminCheck.Error;
 

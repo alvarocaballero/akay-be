@@ -21,19 +21,19 @@ internal sealed class GetSubjectsQueryHandler(IAdminScopeService adminScope,
 
         if (request.CenterId.HasValue)
         {
-            var adminCheck = await adminScope.EnsureAdminOfCenterAsync(request.CenterId.Value, cancellationToken);
-            if (adminCheck.IsFailure)
-                return adminCheck.Error;
+            var check = await adminScope.EnsureAdminOrTeacherOfCenterAsync(request.CenterId.Value, cancellationToken);
+            if (check.IsFailure)
+                return check.Error;
 
             targetCenters = new HashSet<int> { request.CenterId.Value };
         }
         else
         {
-            var adminCenters = await adminScope.GetAdminCenterIdsAsync(cancellationToken);
-            if (adminCenters.Count == 0)
+            var userCenters = await adminScope.GetAdminOrTeacherCenterIdsAsync(cancellationToken);
+            if (userCenters.Count == 0)
                 return new List<SubjectResponse>();
 
-            targetCenters = adminCenters;
+            targetCenters = userCenters;
         }
 
         var subjects = await subjectRepository.GetByCenterIdsAsync(targetCenters, cancellationToken);
