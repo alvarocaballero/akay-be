@@ -12,6 +12,9 @@ public static class UserErrors
     public static Akay.To.Core.Application.Results.Error SuperAdminNotAllowed() =>
         Akay.To.Core.Application.Results.Error.Forbidden("user.superadmin_not_allowed", "No se puede asignar el rol SuperAdmin al crear un usuario.");
 
+    public static Akay.To.Core.Application.Results.Error StudentNotAllowed() =>
+        Akay.To.Core.Application.Results.Error.Forbidden("user.student_not_allowed", "No se puede crear un usuario con rol Student desde este endpoint.");
+
     public static Akay.To.Core.Application.Results.Error NotFound(int id) =>
         Akay.To.Core.Application.Results.Error.NotFound("user.not_found", $"Usuario {id} no encontrado.");
 }

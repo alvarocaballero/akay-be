@@ -82,11 +82,27 @@ public sealed class UserHandlerTests
     }
 
     [Fact]
+    public async Task CreateUser_Should_Fail_When_Student_Role()
+    {
+        AdminScope.Setup(x => x.EnsureAdminOfAllCentersAsync(It.IsAny<IEnumerable<int>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+        UserRepo.Setup(x => x.EmailExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var handler = new CreateUserCommandHandler(AdminScope.Object, UnitOfWork.Object, UserRepo.Object);
+        var command = new CreateUserCommand("student@example.com", "Student", "User", [new CreateUserInitialRole(1, UserRole.Student)]);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("user.student_not_allowed", result.Error!.Code);
+    }
+
+    [Fact]
     public async Task UpdateUser_Should_Update_Profile()
     {
         var user = CreateUserWithExternalId("old@example.com", "Old", "Name");
 
-        AdminScope.Setup(x => x.EnsureCanAccessUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
+        AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         UserRepo.Setup(x => x.EmailExistsAsync("new@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
@@ -107,7 +123,7 @@ public sealed class UserHandlerTests
     {
         var user = CreateUserWithExternalId("old@example.com", "Old", "Name");
 
-        AdminScope.Setup(x => x.EnsureCanAccessUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
+        AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         UserRepo.Setup(x => x.EmailExistsAsync("old@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
@@ -124,7 +140,7 @@ public sealed class UserHandlerTests
     {
         var user = CreateUserWithExternalId("del@example.com", "Delete", "Me");
 
-        AdminScope.Setup(x => x.EnsureCanAccessUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
+        AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
 
         var handler = new DeleteUserCommandHandler(AdminScope.Object, UnitOfWork.Object, UserRepo.Object);
@@ -143,7 +159,7 @@ public sealed class UserHandlerTests
     {
         var user = User.Create("del@example.com", "Delete", "Me");
 
-        AdminScope.Setup(x => x.EnsureCanAccessUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
+        AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
 
         var handler = new DeleteUserCommandHandler(AdminScope.Object, UnitOfWork.Object, UserRepo.Object);

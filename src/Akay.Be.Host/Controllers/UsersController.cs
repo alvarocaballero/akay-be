@@ -41,7 +41,7 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
     [EndpointSummary("Devuelve los roles del usuario actual en el centro indicado junto con su perfil.")]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProfile([FromQuery] int centerId, CancellationToken cancellationToken) =>
+    public async Task<IResult> GetProfile([FromHeader(Name = "X-Center-Id")] int centerId, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetUserProfileQuery(centerId), cancellationToken)).ToOk();
 
     [HttpGet("with-roles")]

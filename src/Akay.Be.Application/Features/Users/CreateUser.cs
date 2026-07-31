@@ -43,6 +43,9 @@ internal sealed class CreateUserCommandHandler(IAdminScopeService adminScope,
             if (role.Role == UserRole.SuperAdmin)
                 return UserErrors.SuperAdminNotAllowed();
 
+            if (role.Role == UserRole.Student)
+                return UserErrors.StudentNotAllowed();
+
             user.AssignRole(role.CenterId, role.Role);
         }
 
