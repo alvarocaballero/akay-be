@@ -15,6 +15,7 @@ namespace Akay.Be.Host.Controllers;
 [ApiController]
 [Route("api/auth")]
 [Tags("Auth")]
+[Produces("application/json")]
 public sealed class AuthController(IDispatcher dispatcher,
                                    EntraIdClaimsReader entraIdClaimsReader) : ControllerBase
 {
@@ -26,7 +27,8 @@ public sealed class AuthController(IDispatcher dispatcher,
     [HttpPost("exchange")]
     [Authorize(AuthenticationSchemes = EntraIdSchemeNames.EntraId)]
     [EndpointSummary("Intercambia un token válido de Entra ID por un JWT propio de Akay.")]
-    [ProducesResponseType<ExchangeAkayTokenResponse>(StatusCodes.Status200OK)]
+    [EndpointDescription("No acepta cuerpo de petición. Envía el access token de Entra External ID en el header Authorization como Bearer token.")]
+    [ProducesResponseType<ExchangeAkayTokenResponse>(StatusCodes.Status200OK, "application/json")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> Exchange(CancellationToken cancellationToken)

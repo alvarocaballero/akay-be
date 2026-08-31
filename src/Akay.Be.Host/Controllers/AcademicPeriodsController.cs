@@ -15,6 +15,7 @@ namespace Akay.Be.Host.Controllers;
 [ApiController]
 [Route("api/academic-periods")]
 [Tags("AcademicPeriods")]
+[Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]

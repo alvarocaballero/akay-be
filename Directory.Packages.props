@@ -4,8 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Akay.To.AI" Version="0.0.3" />
-    <PackageVersion Include="Akay.To.Azure" Version="1.0.5" />
-    <PackageVersion Include="Akay.To.Core" Version="1.1.5" />
+    <PackageVersion Include="Akay.To.Azure" Version="1.0.7" />
+    <PackageVersion Include="Akay.To.Core" Version="1.1.7" />
     <PackageVersion Include="Akay.To.EF.SqlServer" Version="1.0.4" />
     <PackageVersion Include="Akay.To.Messaging.Rebus" Version="1.0.4" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
@@ -14,10 +14,11 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.6" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
-    <PackageVersion Include="Testcontainers.MsSql" Version="4.6.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.14.0" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.20.0.135146" />

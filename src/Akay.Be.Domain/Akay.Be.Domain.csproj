@@ -5,7 +5,11 @@
     <InternalsVisibleTo Include="Akay.Be.Infrastructure.Tests" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')">
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Akay.To.Core" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
   </ItemGroup>
 </Project>

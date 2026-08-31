@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Akay.Be.Domain.Enums;
 
 public enum UserRole

@@ -19,6 +19,7 @@ namespace Akay.Be.Host.Controllers;
 [Route("api/courses")]
 [Tags("Courses")]
 [Authorize]
+[Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
