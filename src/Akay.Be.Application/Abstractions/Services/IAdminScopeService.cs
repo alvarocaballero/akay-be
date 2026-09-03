@@ -53,8 +53,8 @@ public interface IAdminScopeService
     Task<Result> EnsureCanAccessCourseAsync(int courseId, CancellationToken cancellationToken = default);
     Task<Result> EnsureCanWriteCourseAsync(int courseId, CancellationToken cancellationToken = default);
 
-    Task<Result> EnsureCanAccessStudentAsync(int studentId, CancellationToken cancellationToken = default);
-    Task<Result> EnsureCanWriteStudentAsync(int studentId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanAccessStudentAsync(int userId, int centerId, CancellationToken cancellationToken = default);
+    Task<Result> EnsureCanWriteStudentAsync(int userId, int centerId, CancellationToken cancellationToken = default);
 
     Task<Result> EnsureCanAccessUserAsync(int userId, CancellationToken cancellationToken = default);
     Task<Result> EnsureCanWriteUserAsync(int userId, CancellationToken cancellationToken = default);

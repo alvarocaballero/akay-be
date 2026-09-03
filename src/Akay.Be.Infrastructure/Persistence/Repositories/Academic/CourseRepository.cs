@@ -73,11 +73,11 @@ internal sealed class CourseRepository(ApplicationDbContext context) : BaseRepos
             .AsNoTracking()
             .Where(sc => sc.CourseId == courseId)
             .Select(sc => new CourseStudentResponse(sc.CourseId,
-                                                    sc.StudentId,
+                                                    sc.UserId,
                                                     sc.Id,
-                                                    sc.Student.User.FirstName,
-                                                    sc.Student.User.LastName,
-                                                    sc.Student.User.Email))
+                                                    sc.User.FirstName,
+                                                    sc.User.LastName,
+                                                    sc.User.Email))
             .ToListAsync(cancellationToken);
 
     public async Task<Course?> GetWithFullGraphAsync(int id, bool readOnly = false, CancellationToken cancellationToken = default)
@@ -104,13 +104,39 @@ internal sealed class CourseRepository(ApplicationDbContext context) : BaseRepos
             .Where(css => css.CourseSubject.CourseId == courseId && css.CourseSubject.SubjectId == subjectId)
             .Select(css => new CourseSubjectStudentResponse(css.CourseSubject.CourseId,
                                                             css.CourseSubject.SubjectId,
-                                                            css.StudentCourse.Student.Id,
+                                                            css.StudentCourse.UserId,
                                                             css.StudentCourse.Id,
-                                                            css.StudentCourse.Student.StudentNumber,
-                                                            css.StudentCourse.Student.User.FirstName,
-                                                            css.StudentCourse.Student.User.LastName,
-                                                            css.StudentCourse.Student.User.Email))
+                                                            context.Students
+                                                                .Where(student => student.UserId == css.StudentCourse.UserId
+                                                                               && student.CenterId == css.CourseSubject.Course.AcademicPeriod.CenterId)
+                                                                .Select(student => student.StudentNumber)
+                                                                .FirstOrDefault(),
+                                                            css.StudentCourse.User.FirstName,
+                                                            css.StudentCourse.User.LastName,
+                                                            css.StudentCourse.User.Email))
             .ToListAsync(cancellationToken);
+
+    public async Task SoftDeleteStudentEnrollmentsAsync(int userId,
+                                                         int? centerId = null,
+                                                         CancellationToken cancellationToken = default)
+    {
+        var deletedAt = DateTimeOffset.UtcNow;
+        var subjectEnrollments = context.CourseSubjectStudents
+            .IgnoreQueryFilters()
+            .Where(enrollment => enrollment.StudentCourse.UserId == userId
+                              && (!centerId.HasValue
+                                  || enrollment.CourseSubject.Course.AcademicPeriod.CenterId == centerId.Value));
+
+        await subjectEnrollments.ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DeletedAt, deletedAt), cancellationToken);
+
+        var courseEnrollments = context.StudentCourses
+            .IgnoreQueryFilters()
+            .Where(enrollment => enrollment.UserId == userId
+                              && (!centerId.HasValue
+                                  || enrollment.Course.AcademicPeriod.CenterId == centerId.Value));
+
+        await courseEnrollments.ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DeletedAt, deletedAt), cancellationToken);
+    }
 
     public async Task<List<CourseSubjectTeacherResponse>> GetCourseSubjectTeachersWithDetailsAsync(int courseId,
                                                                                                    int subjectId,

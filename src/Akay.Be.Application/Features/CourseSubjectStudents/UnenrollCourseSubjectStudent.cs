@@ -6,7 +6,7 @@ using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.CourseSubjectStudents;
 
-public sealed record UnenrollCourseSubjectStudentCommand(int CourseId, int SubjectId, int StudentId) : ICommand;
+public sealed record UnenrollCourseSubjectStudentCommand(int CourseId, int SubjectId, int UserId) : ICommand;
 
 internal sealed class UnenrollCourseSubjectStudentCommandHandler(IAdminScopeService adminScope,
                                                                  IUnitOfWork unitOfWork,
@@ -28,7 +28,7 @@ internal sealed class UnenrollCourseSubjectStudentCommandHandler(IAdminScopeServ
         if (courseSubject is null)
             return Error.NotFound("course.subject_not_found", "La asignatura no está asignada a este curso.");
 
-        var studentCourse = course.Students.FirstOrDefault(s => s.StudentId == request.StudentId);
+        var studentCourse = course.Students.FirstOrDefault(s => s.UserId == request.UserId);
         if (studentCourse is null)
             return Error.NotFound("course.student_not_enrolled", "El estudiante no está matriculado en el curso.");
 

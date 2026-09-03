@@ -7,13 +7,6 @@ public sealed record UserResponse(int Id,
                                   string LastName,
                                   bool IsActive);
 
-public sealed record UserListItemResponse(int Id,
-                                          Guid? ExternalId,
-                                          string Email,
-                                          string FirstName,
-                                          string LastName,
-                                          bool IsActive);
-
 public sealed record UserWithRolesResponse(int Id,
                                            Guid? ExternalId,
                                            string Email,

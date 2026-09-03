@@ -102,13 +102,13 @@ public sealed class CoursesController(IDispatcher dispatcher) : ControllerBase
     public async Task<IResult> EnrollStudent(int courseId, [FromBody] EnrollCourseStudentCommand command, CancellationToken cancellationToken) =>
         (await dispatcher.Send(command with { CourseId = courseId }, cancellationToken)).ToCreated($"api/courses/{courseId}/students");
 
-    [HttpDelete("{courseId:int}/students/{studentId:int}")]
+    [HttpDelete("{courseId:int}/students/{userId:int}")]
     [EndpointSummary("Desmatricula un estudiante de un curso visible.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UnenrollStudent(int courseId, int studentId, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new UnenrollCourseStudentCommand(courseId, studentId), cancellationToken)).ToNoContent();
+    public async Task<IResult> UnenrollStudent(int courseId, int userId, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new UnenrollCourseStudentCommand(courseId, userId), cancellationToken)).ToNoContent();
 
     // ─── Course Subject Teachers ───────────────────────────────────────────
 
@@ -154,13 +154,13 @@ public sealed class CoursesController(IDispatcher dispatcher) : ControllerBase
     public async Task<IResult> EnrollSubjectStudent(int courseId, int subjectId, [FromBody] EnrollCourseSubjectStudentCommand command, CancellationToken cancellationToken) =>
         (await dispatcher.Send(command with { CourseId = courseId, SubjectId = subjectId }, cancellationToken)).ToCreated($"api/courses/{courseId}/subjects/{subjectId}/students");
 
-    [HttpDelete("{courseId:int}/subjects/{subjectId:int}/students/{studentId:int}")]
+    [HttpDelete("{courseId:int}/subjects/{subjectId:int}/students/{userId:int}")]
     [EndpointSummary("Desinscribe un estudiante de una asignatura de un curso visible.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UnenrollSubjectStudent(int courseId, int subjectId, int studentId, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new UnenrollCourseSubjectStudentCommand(courseId, subjectId, studentId), cancellationToken)).ToNoContent();
+    public async Task<IResult> UnenrollSubjectStudent(int courseId, int subjectId, int userId, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new UnenrollCourseSubjectStudentCommand(courseId, subjectId, userId), cancellationToken)).ToNoContent();
 }
 
 #pragma warning restore CS1591

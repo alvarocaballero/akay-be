@@ -5,7 +5,7 @@ using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.Students;
 
-public sealed record GetStudentDetailsQuery(int StudentId, int CenterId) : IQuery<StudentDetailResponse>;
+public sealed record GetStudentDetailsQuery(int UserId, int CenterId) : IQuery<StudentDetailResponse>;
 
 internal sealed class GetStudentDetailsQueryHandler(IAdminScopeService adminScope,
                                                     IStudentRepository studentRepository) : IQueryHandler<GetStudentDetailsQuery, StudentDetailResponse>
@@ -14,13 +14,13 @@ internal sealed class GetStudentDetailsQueryHandler(IAdminScopeService adminScop
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var access = await adminScope.EnsureCanAccessStudentAsync(request.StudentId, cancellationToken);
+        var access = await adminScope.EnsureCanAccessStudentAsync(request.UserId, request.CenterId, cancellationToken);
         if (access.IsFailure)
             return access.Error;
 
-        var response = await studentRepository.GetStudentDetailsAsync(request.StudentId, request.CenterId, cancellationToken);
+        var response = await studentRepository.GetStudentDetailsAsync(request.UserId, request.CenterId, cancellationToken);
         if (response is null)
-            return Error.NotFound("student.not_found", $"Estudiante {request.StudentId} no encontrado.");
+            return Error.NotFound("student.not_found", $"Estudiante {request.UserId} no encontrado.");
 
         return response;
     }

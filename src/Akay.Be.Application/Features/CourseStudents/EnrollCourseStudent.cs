@@ -1,5 +1,6 @@
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Services;
+using Akay.Be.Domain.Entities.Academic;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Persistence;
 using Akay.To.Core.Application.Responses;
@@ -8,7 +9,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.CourseStudents;
 
-public sealed record EnrollCourseStudentCommand(int CourseId, int StudentId, int[]? SubjectIds = null) : ICommand<CreatedResponse<int>>;
+public sealed record EnrollCourseStudentCommand(int CourseId, int UserId, int[]? SubjectIds = null) : ICommand<CreatedResponse<int>>;
 
 internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService adminScope,
                                                         IUnitOfWork unitOfWork,
@@ -27,42 +28,63 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         if (course is null || course.DeletedAt is not null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
-        var student = await studentRepository.GetByIdAsync(request.StudentId, cancellationToken);
-        if (student is null || student.DeletedAt is not null)
-            return Error.NotFound("student.not_found", $"Estudiante {request.StudentId} no encontrado.");
+        var students = await studentRepository.GetByUserIdAsync(request.UserId, cancellationToken);
+        var student = students.FirstOrDefault(x => x.CenterId == course.AcademicPeriod.CenterId);
+        if (student is null)
+        {
+            return students.Count > 0
+                ? Error.Forbidden("course.student_wrong_center", "El estudiante debe pertenecer al mismo centro que el curso.")
+                : Error.NotFound("student.not_found", $"Estudiante {request.UserId} no encontrado.");
+        }
 
-        if (student.CenterId != course.AcademicPeriod.CenterId)
-            return Error.Forbidden("course.student_wrong_center", "El estudiante debe pertenecer al mismo centro que el curso.");
+        var targetSubjects = ResolveTargetSubjects(course, request.SubjectIds);
 
+        // The course and subject enrollments are saved in two steps, so a
+        // previous failure can leave an active course enrollment without its
+        // subject rows. Retrying then completes the missing part instead of
+        // blowing up on the unique index.
+        var existingEnrollment = course.Students.FirstOrDefault(s => s.UserId == request.UserId && s.DeletedAt == null);
+        if (existingEnrollment is not null &&
+            !targetSubjects.Any(cs => !cs.Students.Any(e => e.StudentCourseId == existingEnrollment.Id && e.DeletedAt == null)))
+            return Error.Conflict("course.student_already_enrolled", $"El usuario {request.UserId} ya está matriculado en el curso {request.CourseId}.");
 
-        course.EnrollStudent(request.StudentId);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var studentCourse = course.Students.First(s => s.StudentId == request.StudentId && s.DeletedAt == null);
+        StudentCourse studentCourse;
+        if (existingEnrollment is null)
+        {
+            course.EnrollStudent(request.UserId);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            studentCourse = course.Students.First(s => s.UserId == request.UserId && s.DeletedAt == null);
+        }
+        else
+        {
+            studentCourse = existingEnrollment;
+        }
 
         var enrolledInSubjects = false;
-        if (request.SubjectIds is null)
+        foreach (var courseSubject in targetSubjects)
         {
-            foreach (var courseSubject in course.Subjects.Where(s => s.DeletedAt == null))
-            {
-                courseSubject.EnrollStudent(studentCourse.Id);
-                enrolledInSubjects = true;
-            }
-        }
-        else if (request.SubjectIds.Length > 0)
-        {
-            var subjectIdSet = request.SubjectIds.ToHashSet();
-            foreach (var courseSubject in course.Subjects.Where(s => s.DeletedAt == null && subjectIdSet.Contains(s.SubjectId)))
-            {
-                courseSubject.EnrollStudent(studentCourse.Id);
-                enrolledInSubjects = true;
-            }
+            if (courseSubject.Students.Any(e => e.StudentCourseId == studentCourse.Id && e.DeletedAt == null))
+                continue;
+
+            courseSubject.EnrollStudent(studentCourse.Id);
+            enrolledInSubjects = true;
         }
 
         if (enrolledInSubjects)
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreatedResponse<int>(studentCourse.Id, studentCourse.CreatedAt);
+    }
+
+    private static List<CourseSubject> ResolveTargetSubjects(Course course, int[]? subjectIds)
+    {
+        var activeSubjects = course.Subjects.Where(s => s.DeletedAt == null);
+        return subjectIds switch
+        {
+            null => activeSubjects.ToList(),
+            { Length: 0 } => [],
+            _ => activeSubjects.Where(s => subjectIds.Contains(s.SubjectId)).ToList()
+        };
     }
 }
 
@@ -71,7 +93,7 @@ public sealed class EnrollCourseStudentCommandValidator : AbstractValidator<Enro
     public EnrollCourseStudentCommandValidator()
     {
         RuleFor(x => x.CourseId).GreaterThan(0);
-        RuleFor(x => x.StudentId).GreaterThan(0);
+        RuleFor(x => x.UserId).GreaterThan(0);
         When(x => x.SubjectIds is not null, () => RuleForEach(x => x.SubjectIds).GreaterThan(0));
     }
 }

@@ -30,12 +30,14 @@ public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
                                       CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetStudentsQuery(centerId, request.Search, request.IsActive), cancellationToken)).ToOk();
 
-    [HttpGet("{id:int}")]
-    [EndpointSummary("Obtiene un estudiante por su ID.")]
+    [HttpGet("{userId:int}")]
+    [EndpointSummary("Obtiene un estudiante por UserId en el centro indicado en el header X-Center-Id.")]
     [ProducesResponseType<StudentResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById(int id, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetStudentByIdQuery(id), cancellationToken)).ToOk();
+    public async Task<IResult> GetById(int userId,
+                                       [FromHeader(Name = "X-Center-Id")] int centerId,
+                                       CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetStudentByUserIdQuery(userId, centerId), cancellationToken)).ToOk();
 
     [HttpPost]
     [EndpointSummary("Crea un perfil de estudiante en el centro indicado en el header X-Center-Id y le asigna el rol Student.")]
@@ -47,29 +49,34 @@ public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
                                       CancellationToken cancellationToken) =>
         (await dispatcher.Send(command with { CenterId = centerId }, cancellationToken)).ToCreated(value => $"api/students/{value.Id}");
 
-    [HttpGet("{id:int}/details")]
+    [HttpGet("{userId:int}/details")]
     [EndpointSummary("Obtiene los datos de un estudiante con los cursos en los que está matriculado y sus asignaturas, filtrados por el centro del header X-Center-Id.")]
     [ProducesResponseType<StudentDetailResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetDetails(int id,
-                                          [FromHeader(Name = "X-Center-Id")] int centerId,
-                                          CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new GetStudentDetailsQuery(id, centerId), cancellationToken)).ToOk();
+    public async Task<IResult> GetDetails(int userId,
+                                           [FromHeader(Name = "X-Center-Id")] int centerId,
+                                           CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new GetStudentDetailsQuery(userId, centerId), cancellationToken)).ToOk();
 
-    [HttpPut("{id:int}")]
-    [EndpointSummary("Actualiza un estudiante visible.")]
+    [HttpPut("{userId:int}")]
+    [EndpointSummary("Actualiza la pertenencia del estudiante en el centro indicado en el header X-Center-Id.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> Update(int id, [FromBody] UpdateStudentCommand command, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(command with { Id = id }, cancellationToken)).ToNoContent();
+    public async Task<IResult> Update(int userId,
+                                      [FromHeader(Name = "X-Center-Id")] int centerId,
+                                      [FromBody] UpdateStudentCommand command,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command with { UserId = userId, CenterId = centerId }, cancellationToken)).ToNoContent();
 
-    [HttpDelete("{id:int}")]
-    [EndpointSummary("Elimina un estudiante visible (soft-delete).")]
+    [HttpDelete("{userId:int}")]
+    [EndpointSummary("Elimina la pertenencia del estudiante en el centro indicado en el header X-Center-Id (soft-delete).")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
-        (await dispatcher.Send(new DeleteStudentCommand(id), cancellationToken)).ToNoContent();
+    public async Task<IResult> Delete(int userId,
+                                      [FromHeader(Name = "X-Center-Id")] int centerId,
+                                      CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new DeleteStudentCommand(userId, centerId), cancellationToken)).ToNoContent();
 }
 
 #pragma warning restore CS1591

@@ -75,7 +75,7 @@ public class AdminAcademicHandlerTests
         courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var studentRepo = new Mock<IStudentRepository>();
-        studentRepo.Setup(x => x.GetByIdAsync(100, Ct)).ReturnsAsync(Student.Create(100, 2));
+        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([Student.Create(100, 2)]);
 
         var uow = new Mock<IUnitOfWork>();
 
@@ -85,6 +85,32 @@ public class AdminAcademicHandlerTests
         Assert.True(result.IsFailure);
         Assert.Equal("course.student_wrong_center", result.Error.Code);
         adminScope.Verify(x => x.EnsureAdminOfCenterAsync(It.IsAny<int>(), Ct), Times.Never);
+    }
+
+    [Fact]
+    public async Task EnrollCourseStudentCommandHandler_UsesUserId_WhenStudentBelongsToCourseCenter()
+    {
+        var adminScope = new Mock<IAdminScopeService>();
+        adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
+
+        var period = AcademicPeriod.Create(1, "P1", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
+        var course = Course.Create(1, "1º ESO", "ESO1");
+        typeof(Course).GetProperty(nameof(Course.AcademicPeriod))!.SetValue(course, period);
+
+        var courseRepo = new Mock<ICourseRepository>();
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
+
+        var studentRepo = new Mock<IStudentRepository>();
+        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([Student.Create(100, 1)]);
+
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.SaveChangesAsync(Ct)).ReturnsAsync(1);
+
+        var handler = new EnrollCourseStudentCommandHandler(adminScope.Object, uow.Object, courseRepo.Object, studentRepo.Object);
+        var result = await handler.Handle(new EnrollCourseStudentCommand(1, 100), Ct);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(100, course.Students.Single().UserId);
     }
 
     [Fact]

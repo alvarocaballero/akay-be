@@ -15,7 +15,7 @@ internal sealed class StudentCourseConfiguration : IEntityTypeConfiguration<Stud
         builder.Property(x => x.CourseId)
             .IsRequired();
 
-        builder.Property(x => x.StudentId)
+        builder.Property(x => x.UserId)
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
@@ -25,14 +25,14 @@ internal sealed class StudentCourseConfiguration : IEntityTypeConfiguration<Stud
 
         builder.Property(x => x.DeletedAt);
 
-        builder.HasOne(x => x.Student)
+        builder.HasOne(x => x.User)
             .WithMany()
-            .HasForeignKey(x => x.StudentId)
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.StudentId, x.CourseId })
+        builder.HasIndex(x => new { x.UserId, x.CourseId })
             .IsUnique()
-            .HasDatabaseName("IX_StudentCourse_StudentId_CourseId")
+            .HasDatabaseName("IX_StudentCourse_UserId_CourseId")
             .HasFilter("[DeletedAt] IS NULL");
     }
 }

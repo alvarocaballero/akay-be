@@ -8,7 +8,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.CourseSubjectStudents;
 
-public sealed record EnrollCourseSubjectStudentCommand(int CourseId, int SubjectId, int StudentId) : ICommand<CreatedResponse<int>>;
+public sealed record EnrollCourseSubjectStudentCommand(int CourseId, int SubjectId, int UserId) : ICommand<CreatedResponse<int>>;
 
 internal sealed class EnrollCourseSubjectStudentCommandHandler(IAdminScopeService adminScope,
                                                                IUnitOfWork unitOfWork,
@@ -30,7 +30,7 @@ internal sealed class EnrollCourseSubjectStudentCommandHandler(IAdminScopeServic
         if (courseSubject is null)
             return Error.NotFound("course.subject_not_found", "La asignatura no está asignada a este curso.");
 
-        var studentCourse = course.Students.FirstOrDefault(s => s.StudentId == request.StudentId);
+        var studentCourse = course.Students.FirstOrDefault(s => s.UserId == request.UserId);
         if (studentCourse is null)
             return Error.Forbidden("course.subject.student_not_enrolled", "El estudiante debe estar matriculado previamente en el curso.");
 
@@ -47,6 +47,6 @@ public sealed class EnrollCourseSubjectStudentCommandValidator : AbstractValidat
     {
         RuleFor(x => x.CourseId).GreaterThan(0);
         RuleFor(x => x.SubjectId).GreaterThan(0);
-        RuleFor(x => x.StudentId).GreaterThan(0);
+        RuleFor(x => x.UserId).GreaterThan(0);
     }
 }

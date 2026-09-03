@@ -24,13 +24,12 @@ namespace Akay.Be.Host.Controllers;
 public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {
     [HttpGet]
-    [EndpointSummary("Lista los usuarios visibles para el centro indicado en el header X-Center-Id.")]
-    [ProducesResponseType<PagedResponse<List<UserListItemResponse>>>(StatusCodes.Status200OK)]
+    [EndpointSummary("Lista los usuarios visibles incluyendo sus roles, filtrable por uno o varios centros con acceso.")]
+    [ProducesResponseType<PagedResponse<List<UserWithRolesResponse>>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetAll([FromHeader(Name = "X-Center-Id")] int centerId,
-                                      [FromQuery] GetUsersQuery query,
+    public async Task<IResult> GetAll([FromQuery] GetUsersQuery query,
                                       CancellationToken cancellationToken) =>
-        (await dispatcher.Send(query with { CenterIds = [centerId] }, cancellationToken)).ToOk();
+        (await dispatcher.Send(query, cancellationToken)).ToOk();
 
     [HttpGet("centers")]
     [EndpointSummary("Devuelve los centros sobre los que el usuario actual tiene permisos.")]
@@ -44,15 +43,6 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProfile([FromHeader(Name = "X-Center-Id")] int centerId, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetUserProfileQuery(centerId), cancellationToken)).ToOk();
-
-    [HttpGet("with-roles")]
-    [EndpointSummary("Lista los usuarios visibles incluyendo sus roles para el centro indicado en el header X-Center-Id.")]
-    [ProducesResponseType<PagedResponse<List<UserWithRolesResponse>>>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetAllWithRoles([FromHeader(Name = "X-Center-Id")] int centerId,
-                                               [FromQuery] GetUsersWithRolesQuery query,
-                                               CancellationToken cancellationToken) =>
-        (await dispatcher.Send(query with { CenterIds = [centerId] }, cancellationToken)).ToOk();
 
     [HttpGet("{id:int}")]
     [EndpointSummary("Obtiene un usuario por su ID.")]
@@ -96,16 +86,15 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
         (await dispatcher.Send(new GetUserRolesQuery(userId), cancellationToken)).ToOk();
 
     [HttpPost("{userId:int}/roles")]
-    [EndpointSummary("Asigna un rol a un usuario en el centro indicado en el header X-Center-Id.")]
+    [EndpointSummary("Asigna un rol a un usuario en el centro indicado en el body.")]
     [ProducesResponseType<CreatedResponse<int>>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> AssignRole(int userId,
-                                          [FromHeader(Name = "X-Center-Id")] int centerId,
                                           [FromBody] AssignUserRoleCommand command,
                                           CancellationToken cancellationToken) =>
-        (await dispatcher.Send(command with { UserId = userId, CenterId = centerId }, cancellationToken)).ToCreated($"api/users/{userId}/roles");
+        (await dispatcher.Send(command with { UserId = userId }, cancellationToken)).ToCreated($"api/users/{userId}/roles");
 
     [HttpDelete("{userId:int}/roles")]
     [EndpointSummary("Elimina un rol de un usuario en un centro administrado.")]

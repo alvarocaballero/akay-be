@@ -30,6 +30,17 @@ public class StudentTests
     }
 
     [Fact]
+    public void Create_AllowsSameUserInDifferentCenters()
+    {
+        var north = Student.Create(1, 10, "NORTH-001");
+        var south = Student.Create(1, 20, "SOUTH-001");
+
+        Assert.Equal(north.UserId, south.UserId);
+        Assert.NotEqual(north.CenterId, south.CenterId);
+        Assert.NotEqual(north.StudentNumber, south.StudentNumber);
+    }
+
+    [Fact]
     public void Activate_SetsActive()
     {
         var student = Student.Create(1, 2);

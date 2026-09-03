@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Enums;
@@ -9,7 +10,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.UserRoles;
 
-public sealed record AssignUserRoleCommand(int UserId, int CenterId, UserRole Role) : ICommand<CreatedResponse<int>>;
+public sealed record AssignUserRoleCommand([property: JsonIgnore] int UserId, int CenterId, UserRole Role) : ICommand<CreatedResponse<int>>;
 
 internal sealed class AssignUserRoleCommandHandler(IAdminScopeService adminScope,
                                                    IUnitOfWork unitOfWork,
@@ -34,13 +35,13 @@ internal sealed class AssignUserRoleCommandHandler(IAdminScopeService adminScope
         if (user is null)
             return Error.NotFound("user.not_found", $"Usuario {request.UserId} no encontrado.");
 
-        if (user.RoleAssignments.Any(r => r.CenterId == request.CenterId && r.Role == request.Role))
+        if (user.RoleAssignments.Any(r => r.CenterId == request.CenterId && r.Role == request.Role && r.DeletedAt == null))
             return Error.Conflict("userrole.duplicate", "El usuario ya tiene este rol en el centro.");
 
         user.AssignRole(request.CenterId, request.Role);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var assignment = user.RoleAssignments.First(r => r.CenterId == request.CenterId && r.Role == request.Role);
+        var assignment = user.RoleAssignments.First(r => r.CenterId == request.CenterId && r.Role == request.Role && r.DeletedAt == null);
         return new CreatedResponse<int>(assignment.Id, assignment.CreatedAt);
     }
 }

@@ -8,7 +8,7 @@ using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.Users;
 
-public sealed record GetUsersQuery : PagedQuery<List<UserListItemResponse>>
+public sealed record GetUsersQuery : PagedQuery<List<UserWithRolesResponse>>
 {
     public IReadOnlyCollection<int>? CenterIds { get; init; }
     public IReadOnlyCollection<UserRole>? Roles { get; init; }
@@ -17,15 +17,15 @@ public sealed record GetUsersQuery : PagedQuery<List<UserListItemResponse>>
 }
 
 internal sealed class GetUsersQueryHandler(IAdminScopeService adminScope,
-                                           IUserRepository userRepository) : IQueryHandler<GetUsersQuery, PagedResponse<List<UserListItemResponse>>>
+                                           IUserRepository userRepository) : IQueryHandler<GetUsersQuery, PagedResponse<List<UserWithRolesResponse>>>
 {
-    public async ValueTask<Result<PagedResponse<List<UserListItemResponse>>>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
+    public async ValueTask<Result<PagedResponse<List<UserWithRolesResponse>>>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var adminCenters = await adminScope.GetAdminCenterIdsAsync(cancellationToken);
         if (adminCenters.Count == 0)
-            return PagedResponse<List<UserListItemResponse>>.Create();
+            return PagedResponse<List<UserWithRolesResponse>>.Create();
 
         var requestedCenterIds = request.CenterIds?.ToHashSet();
         if (requestedCenterIds is not null && requestedCenterIds.Count > 0 && !requestedCenterIds.IsSubsetOf(adminCenters))
@@ -39,10 +39,21 @@ internal sealed class GetUsersQueryHandler(IAdminScopeService adminScope,
 
         var paged = await userRepository.GetPagedByAdminScopeAsync(filter, PageRequest.From(request), cancellationToken);
 
-        var items = paged.Data.Select(u => new UserListItemResponse(u.Id, u.ExternalId, u.Email, u.FirstName, u.LastName, u.IsActive))
-                              .ToList();
+        var items = paged.Data
+            .Select(u => new UserWithRolesResponse(
+                u.Id,
+                u.ExternalId,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                u.IsActive,
+                u.RoleAssignments
+                    .Where(r => r.CenterId.HasValue && r.DeletedAt == null && adminCenters.Contains(r.CenterId.Value))
+                    .Select(r => new UserCenterRoleResponse(r.CenterId!.Value, r.Role.ToString()))
+                    .ToList()))
+            .ToList();
 
-        return PagedResponse<List<UserListItemResponse>>.Create(items,
+        return PagedResponse<List<UserWithRolesResponse>>.Create(items,
                                                                 paged.PageSize,
                                                                 paged.Page,
                                                                 paged.HasMoreItems);

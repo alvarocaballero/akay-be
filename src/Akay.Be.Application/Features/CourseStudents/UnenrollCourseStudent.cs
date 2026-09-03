@@ -6,7 +6,7 @@ using Akay.To.Core.Application.Results;
 
 namespace Akay.Be.Application.Features.CourseStudents;
 
-public sealed record UnenrollCourseStudentCommand(int CourseId, int StudentId) : ICommand;
+public sealed record UnenrollCourseStudentCommand(int CourseId, int UserId) : ICommand;
 
 internal sealed class UnenrollCourseStudentCommandHandler(IAdminScopeService adminScope,
                                                           IUnitOfWork unitOfWork,
@@ -24,7 +24,7 @@ internal sealed class UnenrollCourseStudentCommandHandler(IAdminScopeService adm
         if (course is null || course.DeletedAt is not null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
-        course.UnenrollStudent(request.StudentId);
+        course.UnenrollStudent(request.UserId);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

@@ -50,14 +50,14 @@ internal sealed class CreateStudentCommandHandler(IAdminScopeService adminScope,
         if (request.CourseId is > 0)
         {
             var enrollResult = await dispatcher.Send(new EnrollCourseStudentCommand(request.CourseId.Value,
-                                                                                     student.Id,
-                                                                                     request.SubjectIds),
+                                                                                      student.UserId,
+                                                                                      request.SubjectIds),
                                                      cancellationToken);
             if (enrollResult.IsFailure)
                 return enrollResult.Error;
         }
 
-        return new CreatedResponse<int>(student.Id, student.CreatedAt);
+        return new CreatedResponse<int>(student.UserId, student.CreatedAt);
     }
 
     private async ValueTask<Result<int>> ResolveOrCreateUserAsync(CreateStudentCommand request, CancellationToken ct)

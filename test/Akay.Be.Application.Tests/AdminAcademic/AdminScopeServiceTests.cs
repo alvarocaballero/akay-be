@@ -43,7 +43,7 @@ public class AdminScopeServiceTests
 
         var studentRepo = new Mock<IStudentRepository>();
         if (student is not null)
-            studentRepo.Setup(x => x.GetByIdAsync(student.Id, Ct)).ReturnsAsync(student);
+            studentRepo.Setup(x => x.GetByUserIdAndCenterIdAsync(student.UserId, student.CenterId, Ct)).ReturnsAsync(student);
 
         return new AdminScopeService(userContext.Object, userRepo.Object, subjectRepo.Object, periodRepo.Object, courseRepo.Object, studentRepo.Object);
     }
@@ -105,6 +105,17 @@ public class AdminScopeServiceTests
         var result = await service.EnsureCanAccessSubjectAsync(subject.Id, Ct);
 
         Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public async Task EnsureCanAccessStudentAsync_UsesUserIdAndCenterId()
+    {
+        var student = Student.Create(10, 2);
+        var service = CreateService(1, new Dictionary<int, List<UserRole>> { [2] = [UserRole.Teacher] }, student: student);
+
+        var result = await service.EnsureCanAccessStudentAsync(10, 2, Ct);
+
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]

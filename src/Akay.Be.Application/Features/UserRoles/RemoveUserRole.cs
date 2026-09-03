@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Enums;
@@ -8,7 +9,7 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.UserRoles;
 
-public sealed record RemoveUserRoleCommand(int UserId, int CenterId, UserRole Role) : ICommand;
+public sealed record RemoveUserRoleCommand([property: JsonIgnore] int UserId, int CenterId, UserRole Role) : ICommand;
 
 internal sealed class RemoveUserRoleCommandHandler(IAdminScopeService adminScope,
                                                    IUnitOfWork unitOfWork,

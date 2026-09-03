@@ -138,19 +138,27 @@ internal sealed class AdminScopeService(IUserContext userContext,
             return centerId is null ? null : [centerId.Value];
         }, true, "Curso", cancellationToken);
 
-    public Task<Result> EnsureCanAccessStudentAsync(int studentId, CancellationToken cancellationToken = default)
-        => EnsureResourceAccessAsync(studentId, async (id, ct) =>
-        {
-            var student = await studentRepository.GetByIdAsync(id, ct);
-            return student is null ? null : [student.CenterId];
-        }, false, "Estudiante", cancellationToken);
+    public async Task<Result> EnsureCanAccessStudentAsync(int userId,
+                                                           int centerId,
+                                                           CancellationToken cancellationToken = default)
+    {
+        var student = await studentRepository.GetByUserIdAndCenterIdAsync(userId, centerId, cancellationToken);
+        if (student is null)
+            return Error.NotFound(NotFoundCode, $"Estudiante {userId} no encontrado en el centro {centerId}.");
 
-    public Task<Result> EnsureCanWriteStudentAsync(int studentId, CancellationToken cancellationToken = default)
-        => EnsureResourceAccessAsync(studentId, async (id, ct) =>
-        {
-            var student = await studentRepository.GetByIdAsync(id, ct);
-            return student is null ? null : [student.CenterId];
-        }, true, "Estudiante", cancellationToken);
+        return await EnsureAdminOrTeacherOfCenterAsync(centerId, cancellationToken);
+    }
+
+    public async Task<Result> EnsureCanWriteStudentAsync(int userId,
+                                                          int centerId,
+                                                          CancellationToken cancellationToken = default)
+    {
+        var student = await studentRepository.GetByUserIdAndCenterIdAsync(userId, centerId, cancellationToken);
+        if (student is null)
+            return Error.NotFound(NotFoundCode, $"Estudiante {userId} no encontrado en el centro {centerId}.");
+
+        return await EnsureAdminOfCenterAsync(centerId, cancellationToken);
+    }
 
     public Task<Result> EnsureCanAccessUserAsync(int userId, CancellationToken cancellationToken = default)
         => EnsureResourceAccessAsync(userId, async (id, ct) =>

@@ -13,18 +13,13 @@ namespace Akay.Be.Infrastructure.Persistence.Repositories.Academic;
 
 internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepository<Student, int>(context), IStudentRepository
 {
-    public async Task<List<Student>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default)
+    public async Task<StudentResponse?> GetByUserIdAndCenterIdWithUserAsync(int userId,
+                                                                             int centerId,
+                                                                             CancellationToken cancellationToken = default)
         => await Set
             .AsNoTracking()
-            .Where(x => ids.Contains(x.Id))
-            .ToListAsync(cancellationToken);
-
-    public async Task<StudentResponse?> GetByIdWithUserAsync(int id, CancellationToken cancellationToken = default)
-        => await Set
-            .AsNoTracking()
-            .Where(x => x.Id == id)
-            .Select(x => new StudentResponse(x.Id,
-                                             x.UserId,
+            .Where(x => x.UserId == userId && x.CenterId == centerId)
+            .Select(x => new StudentResponse(x.UserId,
                                              x.CenterId,
                                              x.StudentNumber,
                                              x.IsActive,
@@ -60,7 +55,9 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
         var orderedQuery = query.ApplyOrdering(pageRequest.SortBy,
                                                pageRequest.IsAscending,
                                                sortMap,
-                                               (q, asc) => asc ? q.OrderBy(x => x.Id) : q.OrderByDescending(x => x.Id));
+                                                (q, asc) => asc
+                                                    ? q.OrderBy(x => x.UserId).ThenBy(x => x.CenterId)
+                                                    : q.OrderByDescending(x => x.UserId).ThenByDescending(x => x.CenterId));
 
         int normalizedPage = pageRequest.Page is > 0 ? pageRequest.Page.Value : 1;
         int normalizedPageSize = pageRequest.PageSize is > 0 ? pageRequest.PageSize.Value : 100;
@@ -69,8 +66,7 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
             .AsNoTracking()
             .Skip((normalizedPage - 1) * normalizedPageSize)
             .Take(normalizedPageSize + 1)
-            .Select(student => new StudentResponse(student.Id,
-                                                   student.UserId,
+            .Select(student => new StudentResponse(student.UserId,
                                                    student.CenterId,
                                                    student.StudentNumber,
                                                    student.IsActive,
@@ -98,6 +94,11 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
             .Where(x => x.UserId == userId)
             .ToListAsync(cancellationToken);
 
+    public async Task<List<Student>> GetByUserIdForUpdateAsync(int userId, CancellationToken cancellationToken = default)
+        => await Set
+            .Where(x => x.UserId == userId)
+            .ToListAsync(cancellationToken);
+
     public async Task<List<Student>> GetByCenterIdsAsync(IEnumerable<int> centerIds, CancellationToken cancellationToken = default)
     {
         var ids = centerIds.ToHashSet();
@@ -117,12 +118,11 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.CenterId == centerId, cancellationToken);
 
-    public async Task<StudentDetailResponse?> GetStudentDetailsAsync(int studentId, int centerId, CancellationToken cancellationToken = default)
+    public async Task<StudentDetailResponse?> GetStudentDetailsAsync(int userId, int centerId, CancellationToken cancellationToken = default)
         => await Set
             .AsNoTracking()
-            .Where(student => student.Id == studentId)
+            .Where(student => student.UserId == userId && student.CenterId == centerId)
             .Select(student => new StudentDetailResponse(
-                student.Id,
                 student.UserId,
                 student.CenterId,
                 student.StudentNumber,
@@ -131,8 +131,8 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
                 student.User.LastName,
                 student.User.Email,
                 context.StudentCourses
-                    .Where(studentCourse => studentCourse.StudentId == student.Id
-                                         && studentCourse.Course.AcademicPeriod.CenterId == centerId)
+                     .Where(studentCourse => studentCourse.UserId == student.UserId
+                                          && studentCourse.Course.AcademicPeriod.CenterId == centerId)
                     .Select(studentCourse => new EnrolledCourseResponse(
                         studentCourse.CourseId,
                         studentCourse.Course.Name,

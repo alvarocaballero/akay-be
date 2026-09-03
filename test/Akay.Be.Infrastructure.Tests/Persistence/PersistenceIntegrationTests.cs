@@ -294,7 +294,7 @@ public class PersistenceIntegrationTests
         ctx.Students.Add(student);
         await ctx.SaveChangesAsync(cancellationToken);
 
-        course.EnrollStudent(student.Id);
+        course.EnrollStudent(student.UserId);
         await ctx.SaveChangesAsync(cancellationToken);
 
         var sc = course.Students.First();

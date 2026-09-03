@@ -55,19 +55,19 @@ public sealed class Course : AggregateRoot<int>, IAuditable, ISoftDeletable
         subject.SoftDelete();
     }
 
-    public void EnrollStudent(int studentId)
+    public void EnrollStudent(int userId)
     {
-        if (_students.Any(s => s.StudentId == studentId && s.DeletedAt == null))
-            throw new InvalidOperationException($"Student {studentId} is already enrolled in this course.");
+        if (_students.Any(s => s.UserId == userId && s.DeletedAt == null))
+            throw new InvalidOperationException($"User {userId} is already enrolled in this course.");
 
-        var studentCourse = StudentCourse.Create(Id, studentId);
+        var studentCourse = StudentCourse.Create(Id, userId);
         _students.Add(studentCourse);
     }
 
-    public void UnenrollStudent(int studentId)
+    public void UnenrollStudent(int userId)
     {
-        var studentCourse = _students.FirstOrDefault(s => s.StudentId == studentId && s.DeletedAt == null)
-            ?? throw new InvalidOperationException($"Student {studentId} is not enrolled in this course.");
+        var studentCourse = _students.FirstOrDefault(s => s.UserId == userId && s.DeletedAt == null)
+            ?? throw new InvalidOperationException($"User {userId} is not enrolled in this course.");
 
         studentCourse.SoftDelete();
     }

@@ -1,7 +1,6 @@
 namespace Akay.Be.Application.Features.Students;
 
-public sealed record StudentResponse(int Id,
-                                     int UserId,
+public sealed record StudentResponse(int UserId,
                                      int CenterId,
                                      string? StudentNumber,
                                      bool IsActive,

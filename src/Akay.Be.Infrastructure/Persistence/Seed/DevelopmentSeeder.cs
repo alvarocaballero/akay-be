@@ -220,8 +220,8 @@ public static class DevelopmentSeeder
         // ── Student enrollments in courses ───────────────────────────────────
         void EnrollStudentInCourse(Course course, int userId, int centerId)
         {
-            if (studentByUserCenter.TryGetValue((userId, centerId), out var student))
-                course.EnrollStudent(student.Id);
+            if (studentByUserCenter.ContainsKey((userId, centerId)))
+                course.EnrollStudent(userId);
         }
 
         EnrollStudentInCourse(curso1Norte, s01.Id, centroNorte.Id);
@@ -246,21 +246,21 @@ public static class DevelopmentSeeder
         // ── Course subject student enrollments ───────────────────────────────
         void EnrollInAllSubjects(Course course, int userId, int centerId)
         {
-            if (!studentByUserCenter.TryGetValue((userId, centerId), out var student))
+            if (!studentByUserCenter.ContainsKey((userId, centerId)))
                 return;
 
-            var sc = course.Students.First(s => s.StudentId == student.Id);
+            var sc = course.Students.First(s => s.UserId == userId);
             foreach (var cs in course.Subjects)
                 cs.EnrollStudent(sc.Id);
         }
 
         void EnrollInSubjects(Course course, int userId, int centerId, params Subject[] subjects)
         {
-            if (!studentByUserCenter.TryGetValue((userId, centerId), out var student))
+            if (!studentByUserCenter.ContainsKey((userId, centerId)))
                 return;
 
             var subjectIds = subjects.Select(s => s.Id).ToHashSet();
-            var sc = course.Students.First(s => s.StudentId == student.Id);
+            var sc = course.Students.First(s => s.UserId == userId);
             foreach (var cs in course.Subjects.Where(s => subjectIds.Contains(s.SubjectId)))
                 cs.EnrollStudent(sc.Id);
         }

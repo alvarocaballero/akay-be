@@ -19,4 +19,5 @@ public interface ICourseRepository : IBaseRepository<Course, int>
     Task<List<CourseStudentResponse>> GetStudentsWithUsersByCourseAsync(int courseId, CancellationToken cancellationToken = default);
     Task<List<CourseSubjectStudentResponse>> GetCourseSubjectStudentsWithDetailsAsync(int courseId, int subjectId, CancellationToken cancellationToken = default);
     Task<List<CourseSubjectTeacherResponse>> GetCourseSubjectTeachersWithDetailsAsync(int courseId, int subjectId, CancellationToken cancellationToken = default);
+    Task SoftDeleteStudentEnrollmentsAsync(int userId, int? centerId = null, CancellationToken cancellationToken = default);
 }
