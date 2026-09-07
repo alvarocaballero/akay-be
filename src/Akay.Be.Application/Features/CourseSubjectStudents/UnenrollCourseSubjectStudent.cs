@@ -32,7 +32,11 @@ internal sealed class UnenrollCourseSubjectStudentCommandHandler(IAdminScopeServ
         if (studentCourse is null)
             return Error.NotFound("course.student_not_enrolled", "El estudiante no está matriculado en el curso.");
 
-        courseSubject.UnenrollStudent(studentCourse.Id);
+        var enrollment = courseSubject.Students.FirstOrDefault(candidate => candidate.StudentCourseId == studentCourse.Id);
+        if (enrollment is null)
+            return Error.NotFound("course_subject.student_not_enrolled", "El estudiante no está matriculado en esta asignatura del curso.");
+
+        courseRepository.Remove(enrollment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

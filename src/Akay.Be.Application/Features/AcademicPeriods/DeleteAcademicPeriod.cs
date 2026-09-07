@@ -24,7 +24,7 @@ internal sealed class DeleteAcademicPeriodCommandHandler(IAdminScopeService admi
         if (period is null)
             return Error.NotFound("academicperiod.not_found", $"Periodo académico {request.Id} no encontrado.");
 
-        period.SoftDelete();
+        academicPeriodRepository.Remove(period);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

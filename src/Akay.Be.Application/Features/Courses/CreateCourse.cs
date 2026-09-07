@@ -24,7 +24,7 @@ internal sealed class CreateCourseCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var period = await academicPeriodRepository.GetByIdAsync(request.AcademicPeriodId, cancellationToken);
-        if (period is null || period.DeletedAt is not null)
+        if (period is null)
             return Error.NotFound("academicperiod.not_found", $"Periodo academico {request.AcademicPeriodId} no encontrado.");
 
         if (await courseRepository.CodeExistsInPeriodAsync(request.AcademicPeriodId, request.Code, cancellationToken: cancellationToken))

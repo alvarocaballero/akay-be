@@ -45,4 +45,8 @@ internal sealed class SubjectRepository(ApplicationDbContext context) : BaseRepo
         return await context.Set<SubjectCenter>()
             .AnyAsync(x => x.SubjectId == subjectId && ids.Contains(x.CenterId), cancellationToken);
     }
+
+    public void Remove(SubjectCenter center) => context.Remove(center);
+
+public void Remove(SubjectAdmin admin) => context.Remove(admin);
 }

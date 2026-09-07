@@ -28,7 +28,7 @@ internal sealed class UpdateAcademicPeriodCommandHandler(IAdminScopeService admi
             return access.Error;
 
         var period = await academicPeriodRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (period is null || period.DeletedAt is not null)
+        if (period is null)
             return Error.NotFound("academicperiod.not_found", $"Periodo académico {request.Id} no encontrado.");
 
         if (await academicPeriodRepository.NameExistsInCenterAsync(period.CenterId, request.Name, request.Id, cancellationToken))

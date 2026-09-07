@@ -143,7 +143,7 @@ public class UserRepositoryIntegrationTests
     }
 
     [Fact]
-    public async Task GetPagedByAdminScopeAsync_ExcludesSoftDeletedUsers()
+    public async Task GetPagedByAdminScopeAsync_ExcludesRemovedUsers()
     {
         var ct = TestContext.Current.CancellationToken;
         var ctx = CreateContext(Guid.NewGuid().ToString());
@@ -154,9 +154,9 @@ public class UserRepositoryIntegrationTests
 
         var u2 = User.Create("u2@example.com", "Two", "User");
         u2.AssignRole(1, UserRole.Student);
-        u2.SoftDelete();
-
         ctx.Users.AddRange(u1, u2);
+        await ctx.SaveChangesAsync(ct);
+        repo.Remove(u2);
         await ctx.SaveChangesAsync(ct);
 
         var result = await repo.GetPagedByAdminScopeAsync(

@@ -25,4 +25,5 @@ public interface IUserRepository : IBaseRepository<User, int>
                                                               CancellationToken cancellationToken = default);
 
     Task<List<Center>> GetDistinctCentersByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    void Remove(UserRoleAssignment assignment);
 }

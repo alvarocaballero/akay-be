@@ -110,8 +110,4 @@ public sealed class AcademicPeriod : AggregateRoot<int>, IAuditable, ISoftDeleta
         RaiseDomainEvent(new AcademicPeriodDeactivatedDomainEvent(SyncId, CenterId, Name), DomainEventTiming.BeforeSave);
     }
 
-    public void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

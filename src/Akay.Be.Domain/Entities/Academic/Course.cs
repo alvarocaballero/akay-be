@@ -40,36 +40,20 @@ public sealed class Course : AggregateRoot<int>, IAuditable, ISoftDeletable
 
     public void AddSubject(int subjectId)
     {
-        if (_subjects.Any(s => s.SubjectId == subjectId && s.DeletedAt == null))
+        if (_subjects.Any(s => s.SubjectId == subjectId))
             throw new InvalidOperationException($"Subject {subjectId} is already assigned to this course.");
 
         var courseSubject = CourseSubject.Create(Id, subjectId);
         _subjects.Add(courseSubject);
     }
 
-    public void RemoveSubject(int subjectId)
-    {
-        var subject = _subjects.FirstOrDefault(s => s.SubjectId == subjectId && s.DeletedAt == null)
-            ?? throw new InvalidOperationException($"Subject {subjectId} is not assigned to this course.");
-
-        subject.SoftDelete();
-    }
-
     public void EnrollStudent(int userId)
     {
-        if (_students.Any(s => s.UserId == userId && s.DeletedAt == null))
+        if (_students.Any(s => s.UserId == userId))
             throw new InvalidOperationException($"User {userId} is already enrolled in this course.");
 
         var studentCourse = StudentCourse.Create(Id, userId);
         _students.Add(studentCourse);
-    }
-
-    public void UnenrollStudent(int userId)
-    {
-        var studentCourse = _students.FirstOrDefault(s => s.UserId == userId && s.DeletedAt == null)
-            ?? throw new InvalidOperationException($"User {userId} is not enrolled in this course.");
-
-        studentCourse.SoftDelete();
     }
 
     public void UpdateName(string name)
@@ -84,8 +68,4 @@ public sealed class Course : AggregateRoot<int>, IAuditable, ISoftDeletable
         Code = code;
     }
 
-    public void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

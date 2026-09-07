@@ -27,10 +27,14 @@ internal sealed class RemoveUserRoleCommandHandler(IAdminScopeService adminScope
             return centerCheck.Error;
 
         var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
-        if (user is null || user.DeletedAt is not null)
+        if (user is null)
             return Error.NotFound("user.not_found", $"Usuario {request.UserId} no encontrado.");
 
-        user.RemoveRole(request.CenterId, request.Role);
+        var assignment = user.RoleAssignments.FirstOrDefault(candidate => candidate.CenterId == request.CenterId && candidate.Role == request.Role);
+        if (assignment is null)
+            return Error.NotFound("userrole.assignment_not_found", $"El usuario no tiene el rol {request.Role} en el centro indicado.");
+
+        userRepository.Remove(assignment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

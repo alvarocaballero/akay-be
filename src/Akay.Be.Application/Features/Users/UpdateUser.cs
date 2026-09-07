@@ -27,7 +27,7 @@ internal sealed class UpdateUserCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var user = await userRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (user is null || user.DeletedAt is not null)
+        if (user is null)
             return UserErrors.NotFound(request.Id);
 
         if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase) &&

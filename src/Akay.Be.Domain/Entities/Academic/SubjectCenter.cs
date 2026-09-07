@@ -44,8 +44,4 @@ public sealed class SubjectCenter : Entity<int>, IAuditable, ISoftDeletable
         };
     }
 
-    internal void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

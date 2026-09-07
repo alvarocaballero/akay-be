@@ -21,10 +21,10 @@ internal sealed class DeleteCourseCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var course = await courseRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.Id} no encontrado.");
 
-        course.SoftDelete();
+        courseRepository.Remove(course);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

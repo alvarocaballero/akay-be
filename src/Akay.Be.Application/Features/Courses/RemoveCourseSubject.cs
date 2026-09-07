@@ -22,10 +22,14 @@ internal sealed class RemoveCourseSubjectCommandHandler(IAdminScopeService admin
             return access.Error;
 
         var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
-        course.RemoveSubject(request.SubjectId);
+        var courseSubject = course.Subjects.FirstOrDefault(subject => subject.SubjectId == request.SubjectId);
+        if (courseSubject is null)
+            return Error.NotFound("course.subject_not_found", $"La asignatura {request.SubjectId} no está asignada a este curso.");
+
+        courseRepository.Remove(courseSubject);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return CourseMapper.ToResponse(course);

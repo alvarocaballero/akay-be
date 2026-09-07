@@ -35,13 +35,13 @@ internal sealed class AssignUserRoleCommandHandler(IAdminScopeService adminScope
         if (user is null)
             return Error.NotFound("user.not_found", $"Usuario {request.UserId} no encontrado.");
 
-        if (user.RoleAssignments.Any(r => r.CenterId == request.CenterId && r.Role == request.Role && r.DeletedAt == null))
+        if (user.RoleAssignments.Any(r => r.CenterId == request.CenterId && r.Role == request.Role))
             return Error.Conflict("userrole.duplicate", "El usuario ya tiene este rol en el centro.");
 
         user.AssignRole(request.CenterId, request.Role);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var assignment = user.RoleAssignments.First(r => r.CenterId == request.CenterId && r.Role == request.Role && r.DeletedAt == null);
+        var assignment = user.RoleAssignments.First(r => r.CenterId == request.CenterId && r.Role == request.Role);
         return new CreatedResponse<int>(assignment.Id, assignment.CreatedAt);
     }
 }

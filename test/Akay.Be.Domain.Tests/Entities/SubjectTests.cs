@@ -53,34 +53,7 @@ public class SubjectTests
         var subject = Subject.Create("Math", null, [1]);
         subject.AddCenter(2);
 
-        Assert.Equal(2, subject.Centers.Count(c => c.DeletedAt == null));
-    }
-
-    [Fact]
-    public void RemoveCenter_LastActiveCenter_Throws()
-    {
-        var subject = Subject.Create("Math", null, [1]);
-
-        var ex = Assert.Throws<InvalidOperationException>(() => subject.RemoveCenter(1));
-        Assert.Contains("last", ex.Message.ToLower());
-    }
-
-    [Fact]
-    public void RemoveCenter_NonExistent_Throws()
-    {
-        var subject = Subject.Create("Math", null, [1, 2]);
-
-        var ex = Assert.Throws<InvalidOperationException>(() => subject.RemoveCenter(99));
-        Assert.Contains("not associated", ex.Message.ToLower());
-    }
-
-    [Fact]
-    public void RemoveCenter_Valid_Removes()
-    {
-        var subject = Subject.Create("Math", null, [1, 2]);
-        subject.RemoveCenter(1);
-
-        Assert.Single(subject.Centers, c => c.DeletedAt == null);
+        Assert.Equal(2, subject.Centers.Count);
     }
 
     [Fact]
@@ -100,26 +73,7 @@ public class SubjectTests
         subject.AddAdmin(1);
         subject.AddAdmin(2);
 
-        Assert.Equal(2, subject.Admins.Count(a => a.DeletedAt == null));
-    }
-
-    [Fact]
-    public void RemoveAdmin_Valid_Removes()
-    {
-        var subject = Subject.Create("Math", null, [1]);
-        subject.AddAdmin(1);
-        subject.RemoveAdmin(1);
-
-        Assert.DoesNotContain(subject.Admins, a => a.DeletedAt == null);
-    }
-
-    [Fact]
-    public void RemoveAdmin_NonExistent_Throws()
-    {
-        var subject = Subject.Create("Math", null, [1]);
-
-        var ex = Assert.Throws<InvalidOperationException>(() => subject.RemoveAdmin(99));
-        Assert.Contains("not an admin", ex.Message.ToLower());
+        Assert.Equal(2, subject.Admins.Count);
     }
 
     [Fact]

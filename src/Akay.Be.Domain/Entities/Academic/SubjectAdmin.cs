@@ -30,8 +30,4 @@ public sealed class SubjectAdmin : Entity<int>, IAuditable, ISoftDeletable
         };
     }
 
-    internal void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

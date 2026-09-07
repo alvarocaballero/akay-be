@@ -153,27 +153,6 @@ public class PersistenceIntegrationTests
     }
 
     [Fact]
-    public async Task DomainSoftDelete_MarksDeletedAt()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var ctx = CreateContext(Guid.NewGuid().ToString());
-        var user = User.Create("test@example.com", "Test", "User");
-        user.AssignRole(1, UserRole.Teacher);
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(ct);
-
-        user.RemoveRole(1, UserRole.Teacher);
-        await ctx.SaveChangesAsync(ct);
-
-        var retrieved = await ctx.Users
-            .Include(u => u.RoleAssignments)
-            .FirstAsync(u => u.Email == "test@example.com", ct);
-
-        Assert.DoesNotContain(retrieved.RoleAssignments, r => r.DeletedAt == null);
-        Assert.Single(retrieved.RoleAssignments, r => r.DeletedAt != null);
-    }
-
-    [Fact]
     public async Task RecreateSoftDeleted_UniqueIndex()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -33,7 +33,7 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     [HttpGet("centers")]
     [EndpointSummary("Devuelve los centros sobre los que el usuario actual tiene permisos.")]
-    [ProducesResponseType<IReadOnlyList<UserCenterResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<KeyValueResponse>>(StatusCodes.Status200OK)]
     public async Task<IResult> GetCenters(CancellationToken cancellationToken) =>
         (await dispatcher.Send(new GetUserCentersQuery(), cancellationToken)).ToOk();
 

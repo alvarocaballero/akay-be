@@ -29,7 +29,14 @@ internal sealed class RemoveSubjectCenterCommandHandler(IAdminScopeService admin
         if (subject is null)
             return Error.NotFound("subject.not_found", $"Asignatura {request.SubjectId} no encontrada.");
 
-        subject.RemoveCenter(request.CenterId);
+        var center = subject.Centers.FirstOrDefault(candidate => candidate.CenterId == request.CenterId);
+        if (center is null)
+            return Error.NotFound("subject.center_not_found", $"El centro {request.CenterId} no está asociado a esta asignatura.");
+
+        if (subject.Centers.Count <= 1)
+            return Error.Conflict("subject.last_center", "No se puede eliminar el último centro de una asignatura activa.");
+
+        subjectRepository.Remove(center);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new SubjectResponse(

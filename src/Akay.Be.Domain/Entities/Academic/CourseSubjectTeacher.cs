@@ -30,8 +30,4 @@ public sealed class CourseSubjectTeacher : Entity<int>, IAuditable, ISoftDeletab
         };
     }
 
-    internal void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

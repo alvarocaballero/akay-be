@@ -34,8 +34,4 @@ public sealed class UserRoleAssignment : Entity<int>, IAuditable, ISoftDeletable
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
 
-    internal void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

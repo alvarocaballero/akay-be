@@ -36,40 +36,20 @@ public sealed class CourseSubject : Entity<int>, IAuditable, ISoftDeletable
 
     public void AssignTeacher(int userId)
     {
-        if (_teachers.Any(t => t.UserId == userId && t.DeletedAt == null))
+        if (_teachers.Any(t => t.UserId == userId))
             throw new InvalidOperationException($"User {userId} is already assigned as teacher to this course subject.");
 
         var teacher = CourseSubjectTeacher.Create(Id, userId);
         _teachers.Add(teacher);
     }
 
-    public void RemoveTeacher(int userId)
-    {
-        var teacher = _teachers.FirstOrDefault(t => t.UserId == userId && t.DeletedAt == null)
-            ?? throw new InvalidOperationException($"User {userId} is not assigned as teacher to this course subject.");
-
-        teacher.SoftDelete();
-    }
-
     public void EnrollStudent(int studentCourseId)
     {
-        if (_students.Any(s => s.StudentCourseId == studentCourseId && s.DeletedAt == null))
+        if (_students.Any(s => s.StudentCourseId == studentCourseId))
             throw new InvalidOperationException($"StudentCourse {studentCourseId} is already enrolled in this course subject.");
 
         var enrollment = CourseSubjectStudent.Create(Id, studentCourseId);
         _students.Add(enrollment);
     }
 
-    public void UnenrollStudent(int studentCourseId)
-    {
-        var enrollment = _students.FirstOrDefault(s => s.StudentCourseId == studentCourseId && s.DeletedAt == null)
-            ?? throw new InvalidOperationException($"StudentCourse {studentCourseId} is not enrolled in this course subject.");
-
-        enrollment.SoftDelete();
-    }
-
-    internal void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

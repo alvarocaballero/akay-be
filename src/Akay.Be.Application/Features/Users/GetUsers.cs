@@ -48,7 +48,7 @@ internal sealed class GetUsersQueryHandler(IAdminScopeService adminScope,
                 u.LastName,
                 u.IsActive,
                 u.RoleAssignments
-                    .Where(r => r.CenterId.HasValue && r.DeletedAt == null && adminCenters.Contains(r.CenterId.Value))
+                    .Where(r => r.CenterId.HasValue && adminCenters.Contains(r.CenterId.Value))
                     .Select(r => new UserCenterRoleResponse(r.CenterId!.Value, r.Role.ToString()))
                     .ToList()))
             .ToList();

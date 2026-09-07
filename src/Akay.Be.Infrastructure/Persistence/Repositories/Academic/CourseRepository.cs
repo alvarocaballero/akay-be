@@ -116,26 +116,33 @@ internal sealed class CourseRepository(ApplicationDbContext context) : BaseRepos
                                                             css.StudentCourse.User.Email))
             .ToListAsync(cancellationToken);
 
-    public async Task SoftDeleteStudentEnrollmentsAsync(int userId,
-                                                         int? centerId = null,
-                                                         CancellationToken cancellationToken = default)
+    public void Remove(CourseSubject courseSubject) => context.Remove(courseSubject);
+
+    public void Remove(StudentCourse studentCourse) => context.Remove(studentCourse);
+
+    public void Remove(CourseSubjectTeacher teacher) => context.Remove(teacher);
+
+    public void Remove(CourseSubjectStudent enrollment) => context.Remove(enrollment);
+
+    public async Task UnenrollStudentAsync(int userId,
+                                           int? centerId = null,
+                                           CancellationToken cancellationToken = default)
     {
-        var deletedAt = DateTimeOffset.UtcNow;
-        var subjectEnrollments = context.CourseSubjectStudents
-            .IgnoreQueryFilters()
+        var subjectEnrollments = await context.CourseSubjectStudents
             .Where(enrollment => enrollment.StudentCourse.UserId == userId
-                              && (!centerId.HasValue
-                                  || enrollment.CourseSubject.Course.AcademicPeriod.CenterId == centerId.Value));
+                               && (!centerId.HasValue
+                                   || enrollment.CourseSubject.Course.AcademicPeriod.CenterId == centerId.Value))
+            .ToListAsync(cancellationToken);
 
-        await subjectEnrollments.ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DeletedAt, deletedAt), cancellationToken);
+        context.RemoveRange(subjectEnrollments);
 
-        var courseEnrollments = context.StudentCourses
-            .IgnoreQueryFilters()
+        var courseEnrollments = await context.StudentCourses
             .Where(enrollment => enrollment.UserId == userId
-                              && (!centerId.HasValue
-                                  || enrollment.Course.AcademicPeriod.CenterId == centerId.Value));
+                               && (!centerId.HasValue
+                                   || enrollment.Course.AcademicPeriod.CenterId == centerId.Value))
+            .ToListAsync(cancellationToken);
 
-        await courseEnrollments.ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DeletedAt, deletedAt), cancellationToken);
+        context.RemoveRange(courseEnrollments);
     }
 
     public async Task<List<CourseSubjectTeacherResponse>> GetCourseSubjectTeachersWithDetailsAsync(int courseId,

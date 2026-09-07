@@ -11,4 +11,6 @@ public interface ISubjectRepository : IBaseRepository<Subject, int>
     Task<List<Subject>> GetByCenterIdsAsync(IEnumerable<int> centerIds, CancellationToken cancellationToken = default);
     Task<bool> SubjectIsAvailableForCenterAsync(int subjectId, int centerId, CancellationToken cancellationToken = default);
     Task<bool> SubjectBelongsToAnyCenterAsync(int subjectId, IEnumerable<int> centerIds, CancellationToken cancellationToken = default);
+    void Remove(SubjectCenter center);
+    void Remove(SubjectAdmin admin);
 }

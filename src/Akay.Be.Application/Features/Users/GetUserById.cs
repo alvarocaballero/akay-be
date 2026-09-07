@@ -1,6 +1,5 @@
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Services;
-using Akay.Be.Domain.Entities.Identity;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
 
@@ -20,12 +19,14 @@ internal sealed class GetUserByIdQueryHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var user = await userRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (user is null || user.DeletedAt is not null)
+        if (user is null)
             return Error.NotFound("user.not_found", $"Usuario {request.Id} no encontrado.");
 
-        return Map(user);
+        return new UserResponse(user.Id,
+                                user.ExternalId,
+                                user.Email,
+                                user.FirstName,
+                                user.LastName,
+                                user.IsActive);
     }
-
-    private static UserResponse Map(User user) =>
-        new(user.Id, user.ExternalId, user.Email, user.FirstName, user.LastName, user.IsActive);
 }

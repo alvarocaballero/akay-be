@@ -104,7 +104,7 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
     public async Task<List<Center>> GetDistinctCentersByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var centerIds = await context.Set<UserRoleAssignment>()
-            .Where(x => x.UserId == userId && x.CenterId != null && x.DeletedAt == null)
+            .Where(x => x.UserId == userId && x.CenterId != null)
             .Select(x => x.CenterId!.Value)
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -113,7 +113,9 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
             return [];
 
         return await context.Set<Center>()
-            .Where(c => centerIds.Contains(c.Id) && c.DeletedAt == null)
+            .Where(c => centerIds.Contains(c.Id))
             .ToListAsync(cancellationToken);
     }
+
+    public void Remove(UserRoleAssignment assignment) => context.Remove(assignment);
 }

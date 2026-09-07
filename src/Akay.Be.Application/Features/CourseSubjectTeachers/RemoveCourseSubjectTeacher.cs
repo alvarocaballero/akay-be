@@ -28,7 +28,11 @@ internal sealed class RemoveCourseSubjectTeacherCommandHandler(IAdminScopeServic
         if (courseSubject is null)
             return Error.NotFound("course.subject_not_found", "La asignatura no está asignada a este curso.");
 
-        courseSubject.RemoveTeacher(request.UserId);
+        var teacher = courseSubject.Teachers.FirstOrDefault(candidate => candidate.UserId == request.UserId);
+        if (teacher is null)
+            return Error.NotFound("course_subject.teacher_not_assigned", $"El usuario {request.UserId} no está asignado como docente en esta asignatura del curso.");
+
+        courseRepository.Remove(teacher);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

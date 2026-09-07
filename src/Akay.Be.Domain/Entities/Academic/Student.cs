@@ -45,8 +45,4 @@ public sealed class Student : AggregateRoot<int>, IAuditable, ISoftDeletable
         StudentNumber = studentNumber;
     }
 
-    public void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

@@ -21,10 +21,10 @@ internal sealed class DeleteSubjectCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var subject = await subjectRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (subject is null || subject.DeletedAt is not null)
+        if (subject is null)
             return Error.NotFound("subject.not_found", $"Asignatura {request.Id} no encontrada.");
 
-        subject.SoftDelete();
+        subjectRepository.Remove(subject);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

@@ -22,12 +22,11 @@ internal sealed class DeleteStudentCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var student = await studentRepository.GetByUserIdAndCenterIdAsync(request.UserId, request.CenterId, cancellationToken);
-        if (student is null || student.DeletedAt is not null)
+        if (student is null)
             return Error.NotFound("student.not_found", $"Estudiante {request.UserId} no encontrado en el centro {request.CenterId}.");
 
-        student.SoftDelete();
-        studentRepository.Update(student);
-        await courseRepository.SoftDeleteStudentEnrollmentsAsync(request.UserId, request.CenterId, cancellationToken);
+        studentRepository.Remove(student);
+        await courseRepository.UnenrollStudentAsync(request.UserId, request.CenterId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

@@ -44,7 +44,7 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
         if (role != UserRole.SuperAdmin)
             throw new InvalidOperationException($"Role {role} must be assigned to a center. Use AssignRole instead.");
 
-        if (_roleAssignments.Any(r => r.CenterId == null && r.Role == role && r.DeletedAt == null))
+        if (_roleAssignments.Any(r => r.CenterId == null && r.Role == role))
             throw new InvalidOperationException($"User already has the global role {role}.");
 
         var assignment = new UserRoleAssignment(Id, null, role);
@@ -59,19 +59,11 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
         if (centerId <= 0)
             throw new ArgumentException("CenterId must be greater than zero.", nameof(centerId));
 
-        if (_roleAssignments.Any(r => r.CenterId == centerId && r.Role == role && r.DeletedAt == null))
+        if (_roleAssignments.Any(r => r.CenterId == centerId && r.Role == role))
             throw new InvalidOperationException($"User already has role {role} in center {centerId}.");
 
         var assignment = new UserRoleAssignment(Id, centerId, role);
         _roleAssignments.Add(assignment);
-    }
-
-    public void RemoveRole(int? centerId, UserRole role)
-    {
-        var assignment = _roleAssignments.FirstOrDefault(r => r.CenterId == centerId && r.Role == role && r.DeletedAt == null)
-            ?? throw new InvalidOperationException($"User does not have role {role} for the specified center.");
-
-        assignment.SoftDelete();
     }
 
     public void UpdateProfile(string email, string firstName, string lastName)
@@ -101,11 +93,8 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
 
     public void Deactivate() => IsActive = false;
 
-    public void SoftDelete()
+    public void RequestExternalIdentityCleanup()
     {
-        if (DeletedAt is not null)
-            return;
-
         if (ExternalId.HasValue)
         {
             RaiseDomainEvent(new ExternalIdentityCleanupRequestedOutboxEvent(ExternalId.Value,
@@ -113,7 +102,6 @@ public sealed class User : AggregateRoot<int>, IAuditable, ISoftDeletable
                                                                              ExternalIdentityCleanupReasons.LocalUserDeleted));
         }
 
-        DeletedAt = DateTimeOffset.UtcNow;
     }
 
     public void SetExternalId(Guid externalId)

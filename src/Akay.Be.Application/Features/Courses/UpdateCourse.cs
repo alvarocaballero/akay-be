@@ -23,7 +23,7 @@ internal sealed class UpdateCourseCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var course = await courseRepository.GetWithFullGraphAsync(request.Id, cancellationToken: cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.Id} no encontrado.");
 
         if (await courseRepository.CodeExistsInPeriodAsync(course.AcademicPeriodId, request.Code, request.Id, cancellationToken))

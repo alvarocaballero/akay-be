@@ -51,21 +51,10 @@ public sealed class Subject : AggregateRoot<int>, IAuditable, ISoftDeletable
         if (centerId <= 0)
             throw new ArgumentException("CenterId must be greater than zero.", nameof(centerId));
 
-        if (_centers.Any(c => c.CenterId == centerId && c.DeletedAt == null))
+        if (_centers.Any(c => c.CenterId == centerId))
             throw new InvalidOperationException($"Center {centerId} is already associated with this subject.");
 
         _centers.Add(SubjectCenter.Create(centerId));
-    }
-
-    public void RemoveCenter(int centerId)
-    {
-        var center = _centers.FirstOrDefault(c => c.CenterId == centerId && c.DeletedAt == null)
-            ?? throw new InvalidOperationException($"Center {centerId} is not associated with this subject.");
-
-        if (DeletedAt == null && _centers.Count(c => c.DeletedAt == null) <= 1)
-            throw new InvalidOperationException("Cannot remove the last center from an active subject.");
-
-        center.SoftDelete();
     }
 
     public void AddAdmin(int userId)
@@ -73,18 +62,10 @@ public sealed class Subject : AggregateRoot<int>, IAuditable, ISoftDeletable
         if (userId <= 0)
             throw new ArgumentException("UserId must be greater than zero.", nameof(userId));
 
-        if (_admins.Any(a => a.UserId == userId && a.DeletedAt == null))
+        if (_admins.Any(a => a.UserId == userId))
             throw new InvalidOperationException($"User {userId} is already an admin of this subject.");
 
         _admins.Add(SubjectAdmin.Create(Id, userId));
-    }
-
-    public void RemoveAdmin(int userId)
-    {
-        var admin = _admins.FirstOrDefault(a => a.UserId == userId && a.DeletedAt == null)
-            ?? throw new InvalidOperationException($"User {userId} is not an admin of this subject.");
-
-        admin.SoftDelete();
     }
 
     public void ChangeName(string name)
@@ -98,8 +79,4 @@ public sealed class Subject : AggregateRoot<int>, IAuditable, ISoftDeletable
         Description = description;
     }
 
-    public void SoftDelete()
-    {
-        DeletedAt = DateTimeOffset.UtcNow;
-    }
 }

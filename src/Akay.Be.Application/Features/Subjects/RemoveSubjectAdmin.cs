@@ -22,10 +22,14 @@ internal sealed class RemoveSubjectAdminCommandHandler(IAdminScopeService adminS
             return access.Error;
 
         var subject = await subjectRepository.GetWithAdminsAsync(request.SubjectId, cancellationToken);
-        if (subject is null || subject.DeletedAt is not null)
+        if (subject is null)
             return Error.NotFound("subject.not_found", $"Asignatura {request.SubjectId} no encontrada.");
 
-        subject.RemoveAdmin(request.UserId);
+        var admin = subject.Admins.FirstOrDefault(candidate => candidate.UserId == request.UserId);
+        if (admin is null)
+            return Error.NotFound("subject.admin_not_found", $"El usuario {request.UserId} no es administrador de esta asignatura.");
+
+        subjectRepository.Remove(admin);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

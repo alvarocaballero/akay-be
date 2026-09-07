@@ -42,7 +42,7 @@ internal sealed class ExchangeEntraTokenCommandHandler(IUserRepository userRepos
             }
         }
 
-        if (!user.IsActive || user.DeletedAt is not null)
+        if (!user.IsActive)
             return Error.Forbidden("auth.exchange.user_inactive", "El usuario no está activo en Akay.");
 
         if (!user.ExternalId.HasValue || user.ExternalId.Value != request.ExternalId)
@@ -53,7 +53,6 @@ internal sealed class ExchangeEntraTokenCommandHandler(IUserRepository userRepos
 
         var fullName = string.Join(' ', new[] { user.FirstName, user.LastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
         var roles = user.RoleAssignments
-                        .Where(r => r.DeletedAt == null)
                         .Select(r => r.Role.ToString().ToLowerInvariant())
                         .Distinct()
                         .ToList();

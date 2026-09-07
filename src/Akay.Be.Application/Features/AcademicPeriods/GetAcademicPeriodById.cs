@@ -19,7 +19,7 @@ internal sealed class GetAcademicPeriodByIdQueryHandler(IAdminScopeService admin
             return access.Error;
 
         var period = await academicPeriodRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (period is null || period.DeletedAt is not null)
+        if (period is null)
             return Error.NotFound("academicperiod.not_found", $"Periodo académico {request.Id} no encontrado.");
 
         return new AcademicPeriodResponse(period.Id, period.CenterId, period.Name, period.StartDate, period.EndDate, period.IsActive);

@@ -25,7 +25,7 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
             return access.Error;
 
         var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
         var students = await studentRepository.GetByUserIdAsync(request.UserId, cancellationToken);
@@ -43,9 +43,9 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         // previous failure can leave an active course enrollment without its
         // subject rows. Retrying then completes the missing part instead of
         // blowing up on the unique index.
-        var existingEnrollment = course.Students.FirstOrDefault(s => s.UserId == request.UserId && s.DeletedAt == null);
+        var existingEnrollment = course.Students.FirstOrDefault(s => s.UserId == request.UserId);
         if (existingEnrollment is not null &&
-            !targetSubjects.Any(cs => !cs.Students.Any(e => e.StudentCourseId == existingEnrollment.Id && e.DeletedAt == null)))
+            !targetSubjects.Any(cs => !cs.Students.Any(e => e.StudentCourseId == existingEnrollment.Id)))
             return Error.Conflict("course.student_already_enrolled", $"El usuario {request.UserId} ya está matriculado en el curso {request.CourseId}.");
 
         StudentCourse studentCourse;
@@ -53,7 +53,7 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         {
             course.EnrollStudent(request.UserId);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            studentCourse = course.Students.First(s => s.UserId == request.UserId && s.DeletedAt == null);
+            studentCourse = course.Students.First(s => s.UserId == request.UserId);
         }
         else
         {
@@ -63,7 +63,7 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
         var enrolledInSubjects = false;
         foreach (var courseSubject in targetSubjects)
         {
-            if (courseSubject.Students.Any(e => e.StudentCourseId == studentCourse.Id && e.DeletedAt == null))
+            if (courseSubject.Students.Any(e => e.StudentCourseId == studentCourse.Id))
                 continue;
 
             courseSubject.EnrollStudent(studentCourse.Id);
@@ -78,7 +78,7 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
 
     private static List<CourseSubject> ResolveTargetSubjects(Course course, int[]? subjectIds)
     {
-        var activeSubjects = course.Subjects.Where(s => s.DeletedAt == null);
+        var activeSubjects = course.Subjects;
         return subjectIds switch
         {
             null => activeSubjects.ToList(),

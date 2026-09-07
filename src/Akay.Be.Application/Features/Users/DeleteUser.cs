@@ -10,10 +10,10 @@ namespace Akay.Be.Application.Features.Users;
 public sealed record DeleteUserCommand(int Id) : ICommand;
 
 internal sealed class DeleteUserCommandHandler(IAdminScopeService adminScope,
-                                                  IUnitOfWork unitOfWork,
-                                                  IUserRepository userRepository,
-                                                  IStudentRepository studentRepository,
-                                                  ICourseRepository courseRepository) : ICommandHandler<DeleteUserCommand>
+                                               IUnitOfWork unitOfWork,
+                                               IUserRepository userRepository,
+                                               IStudentRepository studentRepository,
+                                               ICourseRepository courseRepository) : ICommandHandler<DeleteUserCommand>
 {
     public async ValueTask<Result> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
     {
@@ -24,15 +24,17 @@ internal sealed class DeleteUserCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var user = await userRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (user is null || user.DeletedAt is not null)
+        if (user is null)
             return UserErrors.NotFound(request.Id);
 
         user.Deactivate();
-        user.SoftDelete();
-        foreach (var student in await studentRepository.GetByUserIdForUpdateAsync(user.Id, cancellationToken))
-            student.SoftDelete();
 
-        await courseRepository.SoftDeleteStudentEnrollmentsAsync(user.Id, cancellationToken: cancellationToken);
+        //TODO: Outbox event. Implement worker to cleanup external identity
+        user.RequestExternalIdentityCleanup();
+        userRepository.Remove(user);
+        studentRepository.RemoveRange(await studentRepository.GetByUserIdForUpdateAsync(user.Id, cancellationToken));
+
+        await courseRepository.UnenrollStudentAsync(user.Id, cancellationToken: cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

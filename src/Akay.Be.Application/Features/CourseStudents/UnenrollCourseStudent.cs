@@ -21,10 +21,14 @@ internal sealed class UnenrollCourseStudentCommandHandler(IAdminScopeService adm
             return access.Error;
 
         var course = await courseRepository.GetWithStudentsAsync(request.CourseId, cancellationToken: cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
-        course.UnenrollStudent(request.UserId);
+        var enrollment = course.Students.FirstOrDefault(student => student.UserId == request.UserId);
+        if (enrollment is null)
+            return Error.NotFound("course.student_not_enrolled", $"El usuario {request.UserId} no está matriculado en este curso.");
+
+        courseRepository.Remove(enrollment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

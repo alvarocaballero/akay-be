@@ -10,12 +10,12 @@ using FluentValidation;
 
 namespace Akay.Be.Application.Features.Users;
 
-public sealed record CreateUserInitialRole(int CenterId, UserRole Role);
 
 public sealed record CreateUserCommand(string Email,
                                        string FirstName,
                                        string LastName,
                                        IReadOnlyList<CreateUserInitialRole> InitialRoles) : ICommand<CreatedResponse<int>>;
+public sealed record CreateUserInitialRole(int CenterId, UserRole Role);
 
 internal sealed class CreateUserCommandHandler(IAdminScopeService adminScope,
                                                 IUnitOfWork unitOfWork,

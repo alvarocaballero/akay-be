@@ -141,7 +141,7 @@ public sealed class UserHandlerTests
     }
 
     [Fact]
-    public async Task DeleteUser_Should_Deactivate_And_SoftDelete()
+    public async Task DeleteUser_Should_Deactivate_And_RequestExternalIdentityCleanup()
     {
         var user = CreateUserWithExternalId("del@example.com", "Delete", "Me");
 
@@ -154,7 +154,7 @@ public sealed class UserHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.False(user.IsActive);
-        Assert.NotNull(user.DeletedAt);
+        UserRepo.Verify(x => x.Remove(user), Times.Once);
         var cleanupEvent = Assert.Single(user.AfterSaveDomainEvents.OfType<ExternalIdentityCleanupRequestedOutboxEvent>());
         Assert.Equal("del@example.com", cleanupEvent.Email);
         Assert.Equal(ExternalIdentityCleanupReasons.LocalUserDeleted, cleanupEvent.Reason);
@@ -177,7 +177,7 @@ public sealed class UserHandlerTests
     }
 
     [Fact]
-    public async Task DeleteUser_Should_SoftDelete_All_StudentMemberships()
+    public async Task DeleteUser_Should_Remove_All_StudentMemberships()
     {
         var user = User.Create("del@example.com", "Delete", "Me");
         typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, 1);
@@ -190,14 +190,14 @@ public sealed class UserHandlerTests
         AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         StudentRepo.Setup(x => x.GetByUserIdForUpdateAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(students);
-        CourseRepo.Setup(x => x.SoftDeleteStudentEnrollmentsAsync(user.Id, null, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        CourseRepo.Setup(x => x.UnenrollStudentAsync(user.Id, null, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var handler = new DeleteUserCommandHandler(AdminScope.Object, UnitOfWork.Object, UserRepo.Object, StudentRepo.Object, CourseRepo.Object);
         var result = await handler.Handle(new DeleteUserCommand(user.Id), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.All(students, student => Assert.NotNull(student.DeletedAt));
-        CourseRepo.Verify(x => x.SoftDeleteStudentEnrollmentsAsync(user.Id, null, It.IsAny<CancellationToken>()), Times.Once);
+        StudentRepo.Verify(x => x.RemoveRange(students), Times.Once);
+        CourseRepo.Verify(x => x.UnenrollStudentAsync(user.Id, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static User CreateUserWithExternalId(string email, string firstName, string lastName)

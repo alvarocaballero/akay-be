@@ -132,8 +132,7 @@ public class AdminAcademicHandlerTests
         var result = await handler.Handle(new UnenrollCourseStudentCommand(1, 100), Ct);
 
         Assert.True(result.IsSuccess);
-        Assert.NotNull(course.Students.Single().DeletedAt);
-        courseRepo.Verify(x => x.Update(It.IsAny<Course>()), Times.Never);
+        courseRepo.Verify(x => x.Remove(course.Students.Single()), Times.Once);
         uow.Verify(x => x.SaveChangesAsync(Ct), Times.Once);
     }
 

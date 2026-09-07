@@ -24,7 +24,7 @@ internal sealed class AddCourseSubjectCommandHandler(IAdminScopeService adminSco
             return access.Error;
 
         var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
-        if (course is null || course.DeletedAt is not null)
+        if (course is null)
             return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
 
         var centerId = course.AcademicPeriod.CenterId;

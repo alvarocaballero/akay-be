@@ -24,11 +24,11 @@ internal sealed class GetUserProfileQueryHandler(IUserContext userContext,
             return Error.Unauthorized("user.unauthenticated", "Usuario no autenticado.");
 
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null || user.DeletedAt is not null)
+        if (user is null)
             return Error.NotFound("user.not_found", "Usuario no encontrado.");
 
         var roles = user.RoleAssignments
-            .Where(r => r.CenterId == request.CenterId && r.DeletedAt == null)
+            .Where(r => r.CenterId == request.CenterId)
             .Select(r => r.Role)
             .ToList();
 
