@@ -131,9 +131,9 @@ public class AdminAcademicIntegrationTests
         var ctx = CreateContext(Guid.NewGuid().ToString());
         var repo = new StudentRepository(ctx);
 
-        ctx.Students.Add(Student.Create(1, 1, "S001"));
-        ctx.Students.Add(Student.Create(2, 2, "S002"));
-        ctx.Students.Add(Student.Create(3, 3, "S003"));
+        ctx.Students.Add(CreateStudent("user1@test.com", 1, "S001"));
+        ctx.Students.Add(CreateStudent("user2@test.com", 2, "S002"));
+        ctx.Students.Add(CreateStudent("user3@test.com", 3, "S003"));
         await ctx.SaveChangesAsync(ct);
 
         var result = await repo.GetByCenterIdsAsync([1, 3], ct);
@@ -227,7 +227,7 @@ public class AdminAcademicIntegrationTests
         Assert.True(result.HasMoreItems);
     }
 
-    private static async Task<List<int>> SeedUsersAsync(ApplicationDbContext ctx, int count, CancellationToken ct)
+    private static async Task<List<User>> SeedUsersAsync(ApplicationDbContext ctx, int count, CancellationToken ct)
     {
         var users = new List<User>();
         for (int i = 1; i <= count; i++)
@@ -236,6 +236,11 @@ public class AdminAcademicIntegrationTests
         }
         ctx.Set<User>().AddRange(users);
         await ctx.SaveChangesAsync(ct);
-        return users.Select(u => u.Id).ToList();
+        return users;
+    }
+
+    private static Student CreateStudent(string email, int centerId, string studentNumber)
+    {
+        return Student.Create(User.Create(email, "First", "Last"), centerId, studentNumber);
     }
 }

@@ -91,6 +91,7 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
     public async Task<List<Student>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
         => await Set
             .AsNoTracking()
+            .Include(x => x.User)
             .Where(x => x.UserId == userId)
             .ToListAsync(cancellationToken);
 

@@ -37,54 +37,12 @@ internal sealed class EnrollCourseStudentCommandHandler(IAdminScopeService admin
                 : Error.NotFound("student.not_found", $"Estudiante {request.UserId} no encontrado.");
         }
 
-        var targetSubjects = ResolveTargetSubjects(course, request.SubjectIds);
-
-        // The course and subject enrollments are saved in two steps, so a
-        // previous failure can leave an active course enrollment without its
-        // subject rows. Retrying then completes the missing part instead of
-        // blowing up on the unique index.
-        var existingEnrollment = course.Students.FirstOrDefault(s => s.UserId == request.UserId);
-        if (existingEnrollment is not null &&
-            !targetSubjects.Any(cs => !cs.Students.Any(e => e.StudentCourseId == existingEnrollment.Id)))
+        var enrollment = course.EnrollStudent(student, request.SubjectIds);
+        if (!enrollment.Changed)
             return Error.Conflict("course.student_already_enrolled", $"El usuario {request.UserId} ya está matriculado en el curso {request.CourseId}.");
 
-        StudentCourse studentCourse;
-        if (existingEnrollment is null)
-        {
-            course.EnrollStudent(request.UserId);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            studentCourse = course.Students.First(s => s.UserId == request.UserId);
-        }
-        else
-        {
-            studentCourse = existingEnrollment;
-        }
-
-        var enrolledInSubjects = false;
-        foreach (var courseSubject in targetSubjects)
-        {
-            if (courseSubject.Students.Any(e => e.StudentCourseId == studentCourse.Id))
-                continue;
-
-            courseSubject.EnrollStudent(studentCourse.Id);
-            enrolledInSubjects = true;
-        }
-
-        if (enrolledInSubjects)
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return new CreatedResponse<int>(studentCourse.Id, studentCourse.CreatedAt);
-    }
-
-    private static List<CourseSubject> ResolveTargetSubjects(Course course, int[]? subjectIds)
-    {
-        var activeSubjects = course.Subjects;
-        return subjectIds switch
-        {
-            null => activeSubjects.ToList(),
-            { Length: 0 } => [],
-            _ => activeSubjects.Where(s => subjectIds.Contains(s.SubjectId)).ToList()
-        };
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return new CreatedResponse<int>(enrollment.StudentCourse.Id, enrollment.StudentCourse.CreatedAt);
     }
 }
 

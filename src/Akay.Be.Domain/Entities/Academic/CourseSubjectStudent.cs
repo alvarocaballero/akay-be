@@ -7,25 +7,23 @@ public sealed class CourseSubjectStudent : Entity<int>, IAuditable, ISoftDeletab
 {
     private CourseSubjectStudent() { }
 
+#pragma warning disable S1144
     public int CourseSubjectId { get; private set; }
     public CourseSubject CourseSubject { get; private set; } = default!;
     public int StudentCourseId { get; private set; }
     public StudentCourse StudentCourse { get; private set; } = default!;
-#pragma warning disable S1144
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
 
-    internal static CourseSubjectStudent Create(int courseSubjectId, int studentCourseId)
+    internal static CourseSubjectStudent Create(StudentCourse studentCourse)
     {
-        if (studentCourseId <= 0)
-            throw new ArgumentException("StudentCourseId must be greater than zero.", nameof(studentCourseId));
+        ArgumentNullException.ThrowIfNull(studentCourse);
 
         return new CourseSubjectStudent
         {
-            CourseSubjectId = courseSubjectId,
-            StudentCourseId = studentCourseId
+            StudentCourse = studentCourse
         };
     }
 

@@ -34,7 +34,10 @@ internal sealed class DeleteUserCommandHandler(IAdminScopeService adminScope,
         userRepository.Remove(user);
         studentRepository.RemoveRange(await studentRepository.GetByUserIdForUpdateAsync(user.Id, cancellationToken));
 
-        await courseRepository.UnenrollStudentAsync(user.Id, cancellationToken: cancellationToken);
+        var courses = await courseRepository.GetByStudentForUpdateAsync(user.Id, cancellationToken: cancellationToken);
+        foreach (var course in courses)
+            course.UnenrollStudent(course.Students.Single(enrollment => enrollment.UserId == user.Id));
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

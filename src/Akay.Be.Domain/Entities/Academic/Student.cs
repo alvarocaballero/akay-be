@@ -19,17 +19,17 @@ public sealed class Student : AggregateRoot<int>, IAuditable, ISoftDeletable
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
 
-    public static Student Create(int userId, int centerId, string? studentNumber = null)
+    public static Student Create(User user, int centerId, string? studentNumber = null)
     {
-        if (userId <= 0)
-            throw new ArgumentException("UserId must be greater than zero.", nameof(userId));
+        ArgumentNullException.ThrowIfNull(user);
 
         if (centerId <= 0)
             throw new ArgumentException("CenterId must be greater than zero.", nameof(centerId));
 
         return new Student
         {
-            UserId = userId,
+            User = user,
+            UserId = user.Id,
             CenterId = centerId,
             StudentNumber = studentNumber,
             IsActive = true

@@ -34,7 +34,7 @@ internal sealed class EnrollCourseSubjectStudentCommandHandler(IAdminScopeServic
         if (studentCourse is null)
             return Error.Forbidden("course.subject.student_not_enrolled", "El estudiante debe estar matriculado previamente en el curso.");
 
-        courseSubject.EnrollStudent(studentCourse.Id);
+        courseSubject.EnrollStudent(studentCourse);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreatedResponse<int>(studentCourse.Id, studentCourse.CreatedAt);

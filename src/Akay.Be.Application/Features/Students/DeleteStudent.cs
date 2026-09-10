@@ -25,8 +25,11 @@ internal sealed class DeleteStudentCommandHandler(IAdminScopeService adminScope,
         if (student is null)
             return Error.NotFound("student.not_found", $"Estudiante {request.UserId} no encontrado en el centro {request.CenterId}.");
 
+        var courses = await courseRepository.GetByStudentForUpdateAsync(request.UserId, request.CenterId, cancellationToken);
+        foreach (var course in courses)
+            course.UnenrollStudent(course.Students.Single(enrollment => enrollment.UserId == request.UserId));
+
         studentRepository.Remove(student);
-        await courseRepository.UnenrollStudentAsync(request.UserId, request.CenterId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

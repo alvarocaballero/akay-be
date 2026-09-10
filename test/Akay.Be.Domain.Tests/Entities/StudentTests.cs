@@ -1,27 +1,27 @@
 using Akay.Be.Domain.Entities.Academic;
+using Akay.Be.Domain.Entities.Identity;
 
 namespace Akay.Be.Domain.Tests.Entities;
 
 public class StudentTests
 {
     [Fact]
-    public void Create_ZeroUserId_Throws()
+    public void Create_NullUser_Throws()
     {
-        var ex = Assert.Throws<ArgumentException>(() => Student.Create(0, 1));
-        Assert.Contains("UserId", ex.Message);
+        Assert.Throws<ArgumentNullException>(() => Student.Create(null!, 1));
     }
 
     [Fact]
     public void Create_ZeroCenterId_Throws()
     {
-        var ex = Assert.Throws<ArgumentException>(() => Student.Create(1, 0));
+        var ex = Assert.Throws<ArgumentException>(() => Student.Create(CreateUser(1), 0));
         Assert.Contains("CenterId", ex.Message);
     }
 
     [Fact]
     public void Create_Valid_SetsProperties()
     {
-        var student = Student.Create(1, 2, "STU001");
+        var student = Student.Create(CreateUser(1), 2, "STU001");
 
         Assert.Equal(1, student.UserId);
         Assert.Equal(2, student.CenterId);
@@ -32,8 +32,9 @@ public class StudentTests
     [Fact]
     public void Create_AllowsSameUserInDifferentCenters()
     {
-        var north = Student.Create(1, 10, "NORTH-001");
-        var south = Student.Create(1, 20, "SOUTH-001");
+        var user = CreateUser(1);
+        var north = Student.Create(user, 10, "NORTH-001");
+        var south = Student.Create(user, 20, "SOUTH-001");
 
         Assert.Equal(north.UserId, south.UserId);
         Assert.NotEqual(north.CenterId, south.CenterId);
@@ -43,7 +44,7 @@ public class StudentTests
     [Fact]
     public void Activate_SetsActive()
     {
-        var student = Student.Create(1, 2);
+        var student = Student.Create(CreateUser(1), 2);
         student.Deactivate();
         student.Activate();
 
@@ -53,7 +54,7 @@ public class StudentTests
     [Fact]
     public void Deactivate_SetsInactive()
     {
-        var student = Student.Create(1, 2);
+        var student = Student.Create(CreateUser(1), 2);
         student.Deactivate();
 
         Assert.False(student.IsActive);
@@ -62,7 +63,7 @@ public class StudentTests
     [Fact]
     public void ChangeStudentNumber_Updates()
     {
-        var student = Student.Create(1, 2, "OLD");
+        var student = Student.Create(CreateUser(1), 2, "OLD");
         student.ChangeStudentNumber("NEW");
 
         Assert.Equal("NEW", student.StudentNumber);
@@ -71,9 +72,16 @@ public class StudentTests
     [Fact]
     public void ChangeStudentNumber_ToNull_Clears()
     {
-        var student = Student.Create(1, 2, "STU001");
+        var student = Student.Create(CreateUser(1), 2, "STU001");
         student.ChangeStudentNumber(null);
 
         Assert.Null(student.StudentNumber);
+    }
+
+    private static User CreateUser(int id)
+    {
+        var user = User.Create($"student{id}@example.com", "Student", "Test");
+        typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, id);
+        return user;
     }
 }

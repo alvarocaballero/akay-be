@@ -43,13 +43,24 @@ public sealed class CourseSubject : Entity<int>, IAuditable, ISoftDeletable
         _teachers.Add(teacher);
     }
 
-    public void EnrollStudent(int studentCourseId)
+    public bool EnrollStudent(StudentCourse studentCourse)
     {
-        if (_students.Any(s => s.StudentCourseId == studentCourseId))
-            throw new InvalidOperationException($"StudentCourse {studentCourseId} is already enrolled in this course subject.");
+        ArgumentNullException.ThrowIfNull(studentCourse);
 
-        var enrollment = CourseSubjectStudent.Create(Id, studentCourseId);
-        _students.Add(enrollment);
+        if (_students.Any(s => studentCourse.Id > 0 && s.StudentCourseId == studentCourse.Id
+                               || ReferenceEquals(s.StudentCourse, studentCourse)))
+            return false;
+
+        _students.Add(CourseSubjectStudent.Create(studentCourse));
+        return true;
+    }
+
+    internal void UnenrollStudent(StudentCourse studentCourse)
+    {
+        ArgumentNullException.ThrowIfNull(studentCourse);
+
+        _students.RemoveAll(s => studentCourse.Id > 0 && s.StudentCourseId == studentCourse.Id
+                                 || ReferenceEquals(s.StudentCourse, studentCourse));
     }
 
 }

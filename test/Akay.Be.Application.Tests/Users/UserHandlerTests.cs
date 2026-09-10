@@ -26,6 +26,8 @@ public sealed class UserHandlerTests
         UserRepo.Reset();
         StudentRepo.Reset();
         CourseRepo.Reset();
+        CourseRepo.Setup(x => x.GetByStudentForUpdateAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
     }
 
     [Fact]
@@ -183,21 +185,24 @@ public sealed class UserHandlerTests
         typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, 1);
         var students = new List<Akay.Be.Domain.Entities.Academic.Student>
         {
-            Akay.Be.Domain.Entities.Academic.Student.Create(user.Id, 10, "NORTH-001"),
-            Akay.Be.Domain.Entities.Academic.Student.Create(user.Id, 20, "SOUTH-001")
+            Akay.Be.Domain.Entities.Academic.Student.Create(user, 10, "NORTH-001"),
+            Akay.Be.Domain.Entities.Academic.Student.Create(user, 20, "SOUTH-001")
         };
 
         AdminScope.Setup(x => x.EnsureCanWriteUserAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
         UserRepo.Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         StudentRepo.Setup(x => x.GetByUserIdForUpdateAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(students);
-        CourseRepo.Setup(x => x.UnenrollStudentAsync(user.Id, null, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var course = Akay.Be.Domain.Entities.Academic.Course.Create(1, "Course", "C01");
+        course.EnrollStudent(students[0], null);
+        CourseRepo.Setup(x => x.GetByStudentForUpdateAsync(user.Id, null, It.IsAny<CancellationToken>())).ReturnsAsync([course]);
 
         var handler = new DeleteUserCommandHandler(AdminScope.Object, UnitOfWork.Object, UserRepo.Object, StudentRepo.Object, CourseRepo.Object);
         var result = await handler.Handle(new DeleteUserCommand(user.Id), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         StudentRepo.Verify(x => x.RemoveRange(students), Times.Once);
-        CourseRepo.Verify(x => x.UnenrollStudentAsync(user.Id, null, It.IsAny<CancellationToken>()), Times.Once);
+        CourseRepo.Verify(x => x.GetByStudentForUpdateAsync(user.Id, null, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Empty(course.Students);
     }
 
     private static User CreateUserWithExternalId(string email, string firstName, string lastName)

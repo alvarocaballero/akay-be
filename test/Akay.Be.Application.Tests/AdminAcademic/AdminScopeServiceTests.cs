@@ -2,6 +2,7 @@ using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Services;
 using Akay.Be.Domain.Entities.Academic;
+using Akay.Be.Domain.Entities.Identity;
 using Akay.Be.Domain.Enums;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Moq;
@@ -110,7 +111,9 @@ public class AdminScopeServiceTests
     [Fact]
     public async Task EnsureCanAccessStudentAsync_UsesUserIdAndCenterId()
     {
-        var student = Student.Create(10, 2);
+        var user = User.Create("student@example.com", "Student", "Test");
+        typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, 10);
+        var student = Student.Create(user, 2);
         var service = CreateService(1, new Dictionary<int, List<UserRole>> { [2] = [UserRole.Teacher] }, student: student);
 
         var result = await service.EnsureCanAccessStudentAsync(10, 2, Ct);

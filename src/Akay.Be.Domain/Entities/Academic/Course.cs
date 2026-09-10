@@ -47,13 +47,40 @@ public sealed class Course : AggregateRoot<int>, IAuditable, ISoftDeletable
         _subjects.Add(courseSubject);
     }
 
-    public void EnrollStudent(int userId)
+    public CourseEnrollment EnrollStudent(Student student, IReadOnlyCollection<int>? subjectIds)
     {
-        if (_students.Any(s => s.UserId == userId))
-            throw new InvalidOperationException($"User {userId} is already enrolled in this course.");
+        ArgumentNullException.ThrowIfNull(student);
 
-        var studentCourse = StudentCourse.Create(Id, userId);
-        _students.Add(studentCourse);
+        var studentCourse = _students.FirstOrDefault(enrollment => student.UserId > 0
+                                                                     && enrollment.UserId == student.UserId
+                                                                    || ReferenceEquals(enrollment.User, student.User));
+        var changed = studentCourse is null;
+
+        if (studentCourse is null)
+        {
+            studentCourse = StudentCourse.Create(student);
+            _students.Add(studentCourse);
+        }
+
+        var targetSubjects = subjectIds is null
+            ? _subjects
+            : _subjects.Where(subject => subjectIds.Contains(subject.SubjectId));
+
+        foreach (var subject in targetSubjects)
+            changed |= subject.EnrollStudent(studentCourse);
+
+        return new CourseEnrollment(studentCourse, changed);
+    }
+
+    public void UnenrollStudent(StudentCourse studentCourse)
+    {
+        ArgumentNullException.ThrowIfNull(studentCourse);
+
+        if (!_students.Remove(studentCourse))
+            throw new InvalidOperationException("Student is not enrolled in this course.");
+
+        foreach (var subject in _subjects)
+            subject.UnenrollStudent(studentCourse);
     }
 
     public void UpdateName(string name)
@@ -69,3 +96,5 @@ public sealed class Course : AggregateRoot<int>, IAuditable, ISoftDeletable
     }
 
 }
+
+public readonly record struct CourseEnrollment(StudentCourse StudentCourse, bool Changed);

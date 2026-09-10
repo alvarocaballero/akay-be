@@ -105,7 +105,7 @@ public static class DevelopmentSeeder
         foreach (var (user, center) in studentData)
         {
             user.AssignRole(center.Id, UserRole.Student);
-            studentRecords.Add(Student.Create(user.Id, center.Id));
+            studentRecords.Add(Student.Create(user, center.Id));
         }
         context.Set<Student>().AddRange(studentRecords);
         await context.SaveChangesAsync(cancellationToken);
@@ -220,8 +220,8 @@ public static class DevelopmentSeeder
         // ── Student enrollments in courses ───────────────────────────────────
         void EnrollStudentInCourse(Course course, int userId, int centerId)
         {
-            if (studentByUserCenter.ContainsKey((userId, centerId)))
-                course.EnrollStudent(userId);
+            if (studentByUserCenter.TryGetValue((userId, centerId), out var student))
+                course.EnrollStudent(student, []);
         }
 
         EnrollStudentInCourse(curso1Norte, s01.Id, centroNorte.Id);
@@ -251,7 +251,7 @@ public static class DevelopmentSeeder
 
             var sc = course.Students.First(s => s.UserId == userId);
             foreach (var cs in course.Subjects)
-                cs.EnrollStudent(sc.Id);
+                cs.EnrollStudent(sc);
         }
 
         void EnrollInSubjects(Course course, int userId, int centerId, params Subject[] subjects)
@@ -262,7 +262,7 @@ public static class DevelopmentSeeder
             var subjectIds = subjects.Select(s => s.Id).ToHashSet();
             var sc = course.Students.First(s => s.UserId == userId);
             foreach (var cs in course.Subjects.Where(s => subjectIds.Contains(s.SubjectId)))
-                cs.EnrollStudent(sc.Id);
+                cs.EnrollStudent(sc);
         }
 
         EnrollInAllSubjects(curso1Norte, s01.Id, centroNorte.Id);

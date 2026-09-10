@@ -75,7 +75,7 @@ public class AdminAcademicHandlerTests
         courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var studentRepo = new Mock<IStudentRepository>();
-        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([Student.Create(100, 2)]);
+        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([CreateStudent(100, 2)]);
 
         var uow = new Mock<IUnitOfWork>();
 
@@ -101,7 +101,7 @@ public class AdminAcademicHandlerTests
         courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var studentRepo = new Mock<IStudentRepository>();
-        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([Student.Create(100, 1)]);
+        studentRepo.Setup(x => x.GetByUserIdAsync(100, Ct)).ReturnsAsync([CreateStudent(100, 1)]);
 
         var uow = new Mock<IUnitOfWork>();
         uow.Setup(x => x.SaveChangesAsync(Ct)).ReturnsAsync(1);
@@ -111,19 +111,21 @@ public class AdminAcademicHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(100, course.Students.Single().UserId);
+        uow.Verify(x => x.SaveChangesAsync(Ct), Times.Once);
     }
 
     [Fact]
-    public async Task UnenrollCourseStudentCommandHandler_LoadsTrackedCourseBeforeSaving()
+    public async Task UnenrollCourseStudentCommandHandler_RemovesCourseAndSubjectEnrollments()
     {
         var adminScope = new Mock<IAdminScopeService>();
         adminScope.Setup(x => x.EnsureCanWriteCourseAsync(1, Ct)).ReturnsAsync(Result.Success());
 
         var course = Course.Create(1, "1º ESO", "ESO1");
-        course.EnrollStudent(100);
+        course.AddSubject(10);
+        course.EnrollStudent(CreateStudent(100, 1), [10]);
 
         var courseRepo = new Mock<ICourseRepository>();
-        courseRepo.Setup(x => x.GetWithStudentsAsync(1, false, Ct)).ReturnsAsync(course);
+        courseRepo.Setup(x => x.GetWithFullGraphAsync(1, false, Ct)).ReturnsAsync(course);
 
         var uow = new Mock<IUnitOfWork>();
         uow.Setup(x => x.SaveChangesAsync(Ct)).ReturnsAsync(1);
@@ -132,7 +134,8 @@ public class AdminAcademicHandlerTests
         var result = await handler.Handle(new UnenrollCourseStudentCommand(1, 100), Ct);
 
         Assert.True(result.IsSuccess);
-        courseRepo.Verify(x => x.Remove(course.Students.Single()), Times.Once);
+        Assert.Empty(course.Students);
+        Assert.Empty(course.Subjects.Single().Students);
         uow.Verify(x => x.SaveChangesAsync(Ct), Times.Once);
     }
 
@@ -255,5 +258,12 @@ public class AdminAcademicHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Contains(user.RoleAssignments, x => x.CenterId == 8 && x.Role == UserRole.Teacher);
+    }
+
+    private static Student CreateStudent(int userId, int centerId)
+    {
+        var user = User.Create($"student{userId}@example.com", "Student", "Test");
+        typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, userId);
+        return Student.Create(user, centerId);
     }
 }

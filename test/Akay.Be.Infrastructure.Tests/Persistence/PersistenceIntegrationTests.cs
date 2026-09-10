@@ -102,8 +102,11 @@ public class PersistenceIntegrationTests
         var course = Course.Create(period.Id, "1º ESO", "ESO1");
         course.AddSubject(1);
         course.AddSubject(2);
-        course.EnrollStudent(100);
-        course.EnrollStudent(200);
+        var firstStudent = Student.Create(User.Create("student100@example.com", "Student", "One"), center.Id);
+        var secondStudent = Student.Create(User.Create("student200@example.com", "Student", "Two"), center.Id);
+        course.EnrollStudent(firstStudent, null);
+        course.EnrollStudent(secondStudent, null);
+        ctx.Students.AddRange(firstStudent, secondStudent);
 
         ctx.Courses.Add(course);
         await ctx.SaveChangesAsync(ct);
@@ -119,18 +122,62 @@ public class PersistenceIntegrationTests
     }
 
     [Fact]
+    public async Task PersistStudentEnrollmentGraph_InOneSave()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var ctx = CreateContext(Guid.NewGuid().ToString());
+
+        var center = Center.Create("Center", "CEN");
+        ctx.Centers.Add(center);
+        await ctx.SaveChangesAsync(ct);
+
+        var period = AcademicPeriod.Create(center.Id, "2026-2027", new DateOnly(2026, 9, 1), new DateOnly(2027, 6, 30));
+        ctx.AcademicPeriods.Add(period);
+
+        var subject = Subject.Create("Math", null, [center.Id]);
+        ctx.Subjects.Add(subject);
+        await ctx.SaveChangesAsync(ct);
+
+        var course = Course.Create(period.Id, "1º ESO", "ESO1");
+        course.AddSubject(subject.Id);
+        ctx.Courses.Add(course);
+        await ctx.SaveChangesAsync(ct);
+
+        var user = User.Create("student@example.com", "Ada", "Lovelace");
+        var student = Student.Create(user, center.Id, "S001");
+        course.EnrollStudent(student, null);
+        ctx.Users.Add(user);
+        ctx.Students.Add(student);
+
+        await ctx.SaveChangesAsync(ct);
+
+        var enrollment = await ctx.Courses
+            .Include(candidate => candidate.Students)
+            .Include(candidate => candidate.Subjects)
+                .ThenInclude(candidate => candidate.Students)
+            .SingleAsync(candidate => candidate.Id == course.Id, ct);
+
+        Assert.Equal(user.Id, student.UserId);
+        Assert.Single(enrollment.Students);
+        Assert.Equal(user.Id, enrollment.Students.Single().UserId);
+        Assert.Equal(enrollment.Students.Single().Id, enrollment.Subjects.Single().Students.Single().StudentCourseId);
+    }
+
+    [Fact]
     public async Task PersistStudent_AndRetrieve()
     {
         var ct = TestContext.Current.CancellationToken;
         var ctx = CreateContext(Guid.NewGuid().ToString());
-        var student = Student.Create(1, 2, "STU001");
+        var user = User.Create("student@example.com", "Student", "Test");
+        var student = Student.Create(user, 2, "STU001");
+        ctx.Users.Add(user);
         ctx.Students.Add(student);
         await ctx.SaveChangesAsync(ct);
 
         var retrieved = await ctx.Students.FirstOrDefaultAsync(s => s.StudentNumber == "STU001", ct);
 
         Assert.NotNull(retrieved);
-        Assert.Equal(1, retrieved!.UserId);
+        Assert.Equal(user.Id, retrieved!.UserId);
         Assert.Equal(2, retrieved.CenterId);
     }
 
@@ -195,8 +242,13 @@ public class PersistenceIntegrationTests
         var cs = saved.Subjects.First();
         cs.AssignTeacher(100);
         cs.AssignTeacher(200);
-        cs.EnrollStudent(1000);
-        cs.EnrollStudent(2000);
+        var firstStudent = Student.Create(User.Create("student1000@example.com", "Student", "One"), 1);
+        var secondStudent = Student.Create(User.Create("student2000@example.com", "Student", "Two"), 1);
+        var firstEnrollment = course.EnrollStudent(firstStudent, []);
+        var secondEnrollment = course.EnrollStudent(secondStudent, []);
+        cs.EnrollStudent(firstEnrollment.StudentCourse);
+        cs.EnrollStudent(secondEnrollment.StudentCourse);
+        ctx.Students.AddRange(firstStudent, secondStudent);
         await ctx.SaveChangesAsync(ct);
 
         var retrieved = await ctx.Courses
@@ -269,15 +321,17 @@ public class PersistenceIntegrationTests
         cs.AssignTeacher(42);
         await ctx.SaveChangesAsync(cancellationToken);
 
-        var student = Student.Create(1, center.Id, "FULLSTU");
+        var user = User.Create("fullstudent@example.com", "Full", "Student");
+        var student = Student.Create(user, center.Id, "FULLSTU");
+        ctx.Users.Add(user);
         ctx.Students.Add(student);
         await ctx.SaveChangesAsync(cancellationToken);
 
-        course.EnrollStudent(student.UserId);
+        course.EnrollStudent(student, null);
         await ctx.SaveChangesAsync(cancellationToken);
 
         var sc = course.Students.First();
-        cs.EnrollStudent(sc.Id);
+        cs.EnrollStudent(sc);
         await ctx.SaveChangesAsync(cancellationToken);
 
         var loaded = await ctx.Courses
