@@ -119,6 +119,18 @@ internal sealed class StudentRepository(ApplicationDbContext context) : BaseRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.CenterId == centerId, cancellationToken);
 
+    public async Task<List<Student>> GetByUserIdsForCenterAsync(IEnumerable<int> userIds, int centerId, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.ToHashSet();
+        if (ids.Count == 0)
+            return [];
+
+        return await Set
+            .Include(x => x.User)
+            .Where(x => ids.Contains(x.UserId) && x.CenterId == centerId)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<StudentDetailResponse?> GetStudentDetailsAsync(int userId, int centerId, CancellationToken cancellationToken = default)
         => await Set
             .AsNoTracking()

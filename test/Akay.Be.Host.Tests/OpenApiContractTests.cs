@@ -68,4 +68,48 @@ public sealed class OpenApiContractTests
         Assert.Single(responseContent.EnumerateObject());
         Assert.True(responseContent.TryGetProperty("application/json", out _));
     }
+
+    [Fact]
+    public async Task StudentImportEndpoint_PublishesMultipartBinaryFileSchema()
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = "Development"
+        });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddControllers().AddApplicationPart(typeof(StudentsController).Assembly);
+        builder.Services.AddAuthorization();
+        builder.Services.AddOpenApi(new ApplicationInfo { Name = "Test", Version = new Version(1, 0, 0) },
+                                    new SecuritySettings { AuthenticationType = AuthenticationType.Bearer });
+
+        var app = builder.Build();
+        app.MapControllers();
+        app.MapOpenApi("/openapi/{documentName}.json");
+        await app.StartAsync(TestContext.Current.CancellationToken);
+
+        var response = await app.GetTestClient().GetAsync(new Uri("/openapi/v1.json", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var import = document.RootElement.GetProperty("paths")
+            .GetProperty("/api/students/import")
+            .GetProperty("post");
+        var content = import.GetProperty("requestBody").GetProperty("content");
+        var formSchema = content.GetProperty("multipart/form-data").GetProperty("schema");
+        var properties = formSchema.GetProperty("properties");
+        var fileSchema = properties.GetProperty("file");
+        var required = formSchema.GetProperty("required").EnumerateArray().Select(value => value.GetString()).ToList();
+
+        Assert.Single(content.EnumerateObject());
+        Assert.Equal("string", fileSchema.GetProperty("type").GetString());
+        Assert.Equal("binary", fileSchema.GetProperty("format").GetString());
+        Assert.Contains("file", required);
+        Assert.Contains("courseId", required);
+        Assert.True(properties.TryGetProperty("courseId", out var courseSchema));
+        Assert.True(courseSchema.TryGetProperty("type", out var courseType));
+        Assert.Contains("integer", courseType.ValueKind == JsonValueKind.Array
+            ? courseType.EnumerateArray().Select(e => e.GetString())
+            : [courseType.GetString()]);
+    }
 }

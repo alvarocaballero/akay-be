@@ -42,6 +42,18 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
     public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
         => await Set.AnyAsync(x => x.Email == email, cancellationToken);
 
+    public async Task<List<User>> GetByEmailsAsync(IEnumerable<string> emails, CancellationToken cancellationToken = default)
+    {
+        var emailList = emails.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (emailList.Count == 0)
+            return [];
+
+        return await Set
+            .Include(x => x.RoleAssignments)
+            .Where(x => emailList.Contains(x.Email))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<User>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default)
         => await Set
             .Where(x => ids.Contains(x.Id))

@@ -14,6 +14,7 @@ public interface IUserRepository : IBaseRepository<User, int>
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
+    Task<List<User>> GetByEmailsAsync(IEnumerable<string> emails, CancellationToken cancellationToken = default);
     Task<bool> UserExistsWithRoleAsync(int userId, int? centerId, UserRole role, CancellationToken cancellationToken = default);
     Task<bool> UserHasActiveRoleInCenterAsync(int userId, int centerId, UserRole role, CancellationToken cancellationToken = default);
     Task<Dictionary<int, List<UserRole>>> GetUserRolesByCentersAsync(int userId, CancellationToken cancellationToken = default);

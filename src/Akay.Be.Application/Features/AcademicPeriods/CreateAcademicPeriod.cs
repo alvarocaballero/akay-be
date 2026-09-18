@@ -16,9 +16,13 @@ internal sealed class CreateAcademicPeriodCommandHandler(IAdminScopeService admi
                                                          IPersistenceResultExecutor persistence,
                                                          IAcademicPeriodRepository academicPeriodRepository) : ICommandHandler<CreateAcademicPeriodCommand, CreatedResponse<int>>
 {
+    private static readonly Error DuplicateName = Error.Conflict("academicperiod.duplicate_name", "Ya existe un periodo académico con ese nombre en el centro.");
+
+    // SQL Server no expone ConstraintName: el executor cae en la clave genérica por Number (sql.unique_violation).
     private static readonly IReadOnlyDictionary<string, Error> KnownPersistenceErrors = new Dictionary<string, Error>
     {
-        ["IX_AcademicPeriod_CenterId_Name"] = Error.Conflict("academicperiod.duplicate_name", "Ya existe un periodo académico con ese nombre en el centro."),
+        ["IX_AcademicPeriod_CenterId_Name"] = DuplicateName,
+        ["sql.unique_violation"] = DuplicateName,
     };
 
     public async ValueTask<Result<CreatedResponse<int>>> Handle(CreateAcademicPeriodCommand request, CancellationToken cancellationToken)

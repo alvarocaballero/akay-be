@@ -16,5 +16,6 @@ public interface IStudentRepository : IBaseRepository<Student, int>
     Task<List<Student>> GetByCenterIdsAsync(IEnumerable<int> centerIds, CancellationToken cancellationToken = default);
     Task<bool> StudentExistsForUserAndCenterAsync(int userId, int centerId, CancellationToken cancellationToken = default);
     Task<Student?> GetByUserIdAndCenterIdAsync(int userId, int centerId, CancellationToken cancellationToken = default);
+    Task<List<Student>> GetByUserIdsForCenterAsync(IEnumerable<int> userIds, int centerId, CancellationToken cancellationToken = default);
     Task<StudentDetailResponse?> GetStudentDetailsAsync(int userId, int centerId, CancellationToken cancellationToken = default);
 }

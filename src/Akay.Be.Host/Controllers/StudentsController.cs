@@ -1,3 +1,4 @@
+using System.Text;
 using Akay.Be.Application.Features.Students;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Responses;
@@ -22,6 +23,8 @@ namespace Akay.Be.Host.Controllers;
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
 {
+    private const long MaxCsvUploadBytes = 5 * 1024 * 1024;
+
     [HttpGet]
     [EndpointSummary("Lista paginada los estudiantes del centro indicado en el header X-Center-Id.")]
     [ProducesResponseType<PagedResponse<List<StudentResponse>>>(StatusCodes.Status200OK)]
@@ -48,6 +51,25 @@ public sealed class StudentsController(IDispatcher dispatcher) : ControllerBase
                                       [FromBody] CreateStudentCommand command,
                                       CancellationToken cancellationToken) =>
         (await dispatcher.Send(command with { CenterId = centerId }, cancellationToken)).ToCreated(value => $"api/students/{value.Id}");
+
+    [HttpPost("import")]
+    [EndpointSummary("Importa estudiantes desde un archivo CSV (Email, StudentNumber, FirstName, LastName) y los matricula en todas las asignaturas del curso indicado. Si el email ya existe, actualiza Nombre, Apellidos y StudentNumber del estudiante y lo matricula en el curso sin crear un duplicado.")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(MaxCsvUploadBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxCsvUploadBytes)]
+    [ProducesResponseType<ImportStudentsCsvResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ImportCsv([FromHeader(Name = "X-Center-Id")] int centerId,
+                                         [FromForm] int courseId,
+                                         [FromForm] IFormFile file,
+                                         CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var csvContent = await reader.ReadToEndAsync(cancellationToken);
+
+        return (await dispatcher.Send(new ImportStudentsCsvCommand(centerId, courseId, csvContent), cancellationToken)).ToOk();
+    }
 
     [HttpGet("{userId:int}/details")]
     [EndpointSummary("Obtiene los datos de un estudiante con los cursos en los que está matriculado y sus asignaturas, filtrados por el centro del header X-Center-Id.")]

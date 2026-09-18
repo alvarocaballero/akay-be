@@ -33,7 +33,7 @@ Domain → none
 * Organize Application by feature or use case using Vertical Slice Architecture.
 * Repositories return domain entities.
 * Mapping to responses belongs in Application.
-* EF Core, repositories and migrations belong in Infrastructure.
+* EF Core configuration and repositories belong in Infrastructure. This project does not use EF Core migrations; the database schema is managed manually and must be kept aligned with the current model.
 * Domain must not depend on EF Core, HTTP, Azure, AI providers or other infrastructure concerns.
 
 ## Domain
@@ -204,7 +204,7 @@ Infrastructure implements technical details required by Akay.Be.
 * Prefer existing Akay.To abstractions and extension methods.
 * Do not add dependencies without justification.
 * Do not add a library when the same concern is already solved by Akay.To or the .NET platform.
-* Do not create migrations unless explicitly requested.
+* Do not add EF Core migrations: the project deliberately has no migration workflow. Never propose generating a baseline migration; schema alignment is done with explicit, reviewed DDL scripts against the target database.
 * Do not publish packages unless explicitly requested.
 * Do not perform destructive changes unless explicitly requested.
 * Do not weaken architecture boundaries to simplify a local implementation.
@@ -217,7 +217,7 @@ Add:
 * Integration tests for EF Core and repositories.
 * Architecture tests for dependency rules.
 
-Integration tests must use migrations and minimal controlled seed data.
+Integration tests must use minimal controlled seed data against a schema created from the current model (no migrations).
 
 When behavior depends on an Akay.To building block, test Akay.Be's integration with that building block rather than reproducing tests for Akay.To internals.
 
