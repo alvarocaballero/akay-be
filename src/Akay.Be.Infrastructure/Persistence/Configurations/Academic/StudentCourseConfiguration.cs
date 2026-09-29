@@ -8,22 +8,30 @@ internal sealed class StudentCourseConfiguration : IEntityTypeConfiguration<Stud
 {
     public void Configure(EntityTypeBuilder<StudentCourse> builder)
     {
-        builder.ToTable("StudentCourse", "academic");
+        builder.ToTable("student_course", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.CourseId)
+            .HasColumnName("course_id")
             .IsRequired();
 
         builder.Property(x => x.UserId)
+            .HasColumnName("user_id")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasOne(x => x.User)
             .WithMany()
@@ -33,6 +41,6 @@ internal sealed class StudentCourseConfiguration : IEntityTypeConfiguration<Stud
         builder.HasIndex(x => new { x.UserId, x.CourseId })
             .IsUnique()
             .HasDatabaseName("IX_StudentCourse_UserId_CourseId")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
     }
 }

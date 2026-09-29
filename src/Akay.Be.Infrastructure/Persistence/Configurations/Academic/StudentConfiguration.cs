@@ -8,28 +8,38 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 {
     public void Configure(EntityTypeBuilder<Student> builder)
     {
-        builder.ToTable(nameof(Student), "academic");
+        builder.ToTable("student", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.UserId)
+            .HasColumnName("user_id")
             .IsRequired();
 
         builder.Property(x => x.CenterId)
+            .HasColumnName("center_id")
             .IsRequired();
 
         builder.Property(x => x.StudentNumber)
+            .HasColumnName("student_number")
             .HasMaxLength(50);
 
         builder.Property(x => x.IsActive)
+            .HasColumnName("is_active")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasOne(x => x.User)
             .WithMany()
@@ -39,6 +49,6 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.HasIndex(x => new { x.UserId, x.CenterId })
             .IsUnique()
             .HasDatabaseName("IX_Student_UserId_CenterId")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
     }
 }

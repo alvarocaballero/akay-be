@@ -23,8 +23,7 @@
   <ItemGroup>
     <PackageReference Include="Akay.To.AI" />
     <PackageReference Include="Akay.To.Azure" />
-    <PackageReference Include="Akay.To.Core" />
-    <PackageReference Include="Akay.To.EF.SqlServer" />
+    <PackageReference Include="Akay.To.EF.Npgsql" />
     <PackageReference Include="Akay.To.Messaging.Rebus" />
   </ItemGroup>
 </Project>

@@ -108,9 +108,9 @@ internal sealed class CreateLearningHubCommandHandler(ICompensationContext compe
         // El parámetro FailedAttempts del comando permite forzar N fallos consecutivos antes del éxito.
         TrySendNotification(created, request.FailedAttempts);
 
-        // 9. Publicar evento de creación (simulado con un mensaje en el bus).
-        await messageBus.PublishAsync(new LearningHubCreatedEvent(created.Id, created.Name, created.Description),
-                                      new MessagePublishOptions
+        // 9. Enviar el mensaje al consumidor de la API mediante su cola de entrada.
+        await messageBus.SendAsync(new LearningHubCreatedMessage(created.Id, created.Name, created.Description),
+                                   new MessageSendOptions
                                       {
                                           TimeToLive = TimeSpan.FromHours(1),
                                           Headers = new Dictionary<string, string>
@@ -120,14 +120,6 @@ internal sealed class CreateLearningHubCommandHandler(ICompensationContext compe
                                           }
                                       },
                                       cancellationToken);
-
-        // Otra forma de publicar con opciones es usando un "envelope":
-        ////await messageBus.PublishAsync(new LearningHubCreatedEvent(created.Id, created.Name, created.Description),
-        ////                              new MessagePublishOptions().WithTimeToLive(TimeSpan.FromHours(1))
-        ////                                                         .WithHeader("x-correlation-id", Activity.Current?.Id ?? "")
-        ////                                                         .WithHeader("x-user-id", userContext.UserId.ToString() ?? "anonymous"),
-        ////                              cancellationToken);
-
 
         // 10. Si todo ha ido bien, se devuelve el resultado exitoso con los datos del hub creado.
         return new CreatedResponse<int>(created.Id, new DateTimeOffset(created.CreatedAt, TimeSpan.Zero));

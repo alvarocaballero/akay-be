@@ -8,24 +8,32 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
 {
     public void Configure(EntityTypeBuilder<UserProfile> builder)
     {
-        builder.ToTable("UserProfile", "identity");
+        builder.ToTable("user_profile", "identity");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.UserId)
+            .HasColumnName("user_id")
             .IsRequired();
 
         builder.Property(x => x.Language)
+            .HasColumnName("language")
             .IsRequired()
             .HasMaxLength(5);
 
         builder.Property(x => x.DarkMode)
+            .HasColumnName("dark_mode")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
         builder.HasIndex(x => x.UserId)
             .IsUnique()

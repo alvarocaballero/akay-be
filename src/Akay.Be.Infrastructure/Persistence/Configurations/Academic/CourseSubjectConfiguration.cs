@@ -8,27 +8,35 @@ internal sealed class CourseSubjectConfiguration : IEntityTypeConfiguration<Cour
 {
     public void Configure(EntityTypeBuilder<CourseSubject> builder)
     {
-        builder.ToTable("CourseSubject", "academic");
+        builder.ToTable("course_subject", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.CourseId)
+            .HasColumnName("course_id")
             .IsRequired();
 
         builder.Property(x => x.SubjectId)
+            .HasColumnName("subject_id")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasIndex(x => new { x.CourseId, x.SubjectId })
             .IsUnique()
             .HasDatabaseName("IX_CourseSubject_CourseId_SubjectId")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
 
         builder.HasOne(x => x.Subject)
             .WithMany()

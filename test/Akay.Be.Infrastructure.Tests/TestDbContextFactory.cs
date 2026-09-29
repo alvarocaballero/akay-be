@@ -10,10 +10,10 @@ internal static class TestDbContextFactory
 {
     public static ApplicationDbContext CreateContext()
     {
-        const string connection = "Server=localhost;Database=AkayBeTests;Integrated Security=true;TrustServerCertificate=true;";
+        const string connection = "Host=localhost;Database=AkayBeTests;Username=postgres;Password=postgres123;";
 
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-        optionsBuilder.UseSqlServer(connection);
+        optionsBuilder.UseNpgsql(connection);
 
         var userContext = new TestUserContext();
         var registration = new DbContextRegistration<ApplicationDbContext>(

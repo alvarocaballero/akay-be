@@ -15,7 +15,7 @@ namespace Akay.Be.Host.Tests;
 public sealed class MessagingIntegrationTests
 {
     [Fact]
-    public async Task Publish_LearningHubCreatedEvent_Should_Deliver_To_UserRegisteredConsumer_And_Dispatch_Command()
+    public async Task Send_LearningHubCreatedMessage_Should_Deliver_To_Consumer_And_Dispatch_Command()
     {
         var dispatcher = new RecordingDispatcher();
         var services = new ServiceCollection();
@@ -29,15 +29,15 @@ public sealed class MessagingIntegrationTests
         };
 
         // Scan the Host assembly where the real consumers live
-        services.AddRebusMessaging(settings, typeof(UserRegisteredConsumer).Assembly);
+        services.AddRebusMessaging(settings, typeof(LearningHubCreatedConsumer).Assembly);
 
         await using var provider = services.BuildServiceProvider();
 
         foreach (var hostedService in provider.GetServices<IHostedService>())
             await hostedService.StartAsync(TestContext.Current.CancellationToken);
 
-        var message = new LearningHubCreatedEvent(42, "Integration Test Hub", "Testing real consumer");
-        await provider.GetRequiredService<IMessageBus>().PublishAsync(message, TestContext.Current.CancellationToken);
+        var message = new LearningHubCreatedMessage(42, "Integration Test Hub", "Testing real consumer");
+        await provider.GetRequiredService<IMessageBus>().SendAsync(message, TestContext.Current.CancellationToken);
 
         var command = await dispatcher.WaitForCommand<SendNewLearningHubNotification>(TimeSpan.FromSeconds(3));
 
@@ -58,7 +58,7 @@ public sealed class MessagingIntegrationTests
             InputQueueName = "test-akaybe-cmd"
         };
 
-        services.AddRebusMessaging(settings, typeof(UserRegisteredConsumer).Assembly);
+        services.AddRebusMessaging(settings, typeof(LearningHubCreatedConsumer).Assembly);
 
         await using var provider = services.BuildServiceProvider();
 
@@ -70,31 +70,6 @@ public sealed class MessagingIntegrationTests
         Assert.Null(exception);
     }
 
-    [Fact]
-    public async Task MessageBus_Should_Publish_LearningHubCreatedEvent_Without_Error()
-    {
-        var dispatcher = new RecordingDispatcher();
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton<IDispatcher>(dispatcher);
-
-        var settings = new MessagingSettings
-        {
-            Transport = MessagingTransportNames.InMemory,
-            InputQueueName = "test-akaybe-publish"
-        };
-
-        services.AddRebusMessaging(settings, typeof(UserRegisteredConsumer).Assembly);
-
-        await using var provider = services.BuildServiceProvider();
-
-        var messageBus = provider.GetRequiredService<IMessageBus>();
-
-        var message = new LearningHubCreatedEvent(1, "Sample", "Desc");
-        var exception = await Record.ExceptionAsync(() => messageBus.PublishAsync(message, TestContext.Current.CancellationToken));
-
-        Assert.Null(exception);
-    }
 }
 
 internal sealed class RecordingDispatcher : IDispatcher

@@ -62,20 +62,9 @@ internal sealed partial class ImportStudentsCsvCommandHandler(IAdminScopeService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var centerCheck = await adminScope.EnsureAdminOfCenterAsync(request.CenterId, cancellationToken);
-        if (centerCheck.IsFailure)
-            return centerCheck.Error;
-
-        var courseAccess = await adminScope.EnsureCanWriteCourseAsync(request.CourseId, cancellationToken);
-        if (courseAccess.IsFailure)
-            return courseAccess.Error;
-
-        var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
-        if (course is null)
-            return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
-
-        if (course.AcademicPeriod.CenterId != request.CenterId)
-            return Error.Forbidden("course.student_wrong_center", "Los estudiantes deben pertenecer al mismo centro que el curso.");
+        var courseResult = await ResolveCourseAsync(request, cancellationToken);
+        if (courseResult.IsFailure)
+            return courseResult.Error;
 
         var parseResult = ParseCsv(request.CsvContent, cancellationToken);
         if (parseResult.IsFailure)
@@ -93,11 +82,49 @@ internal sealed partial class ImportStudentsCsvCommandHandler(IAdminScopeService
                                                                                    cancellationToken))
             .ToDictionary(student => student.UserId);
 
+        var summary = ProcessRows(rows, request.CenterId, courseResult.Value!, usersByEmail, studentsByUserId, cancellationToken);
+        if (!summary.HasProcessedRows)
+            return Error.Validation("csv.no_valid_rows", "El archivo no contiene ninguna fila valida para importar.");
+
+        var save = await persistence.TrySaveChangesAsync(KnownPersistenceErrors, cancellationToken);
+        if (save.IsFailure)
+            return save.Error;
+
+        return new ImportStudentsCsvResponse(summary.Imported, summary.Updated, summary.Skipped, summary.Errors.Count, summary.Errors);
+    }
+
+    private async ValueTask<Result<Course>> ResolveCourseAsync(ImportStudentsCsvCommand request, CancellationToken cancellationToken)
+    {
+        var centerCheck = await adminScope.EnsureAdminOfCenterAsync(request.CenterId, cancellationToken);
+        if (centerCheck.IsFailure)
+            return centerCheck.Error;
+
+        var courseAccess = await adminScope.EnsureCanWriteCourseAsync(request.CourseId, cancellationToken);
+        if (courseAccess.IsFailure)
+            return courseAccess.Error;
+
+        var course = await courseRepository.GetWithFullGraphAsync(request.CourseId, cancellationToken: cancellationToken);
+        if (course is null)
+            return Error.NotFound("course.not_found", $"Curso {request.CourseId} no encontrado.");
+
+        if (course.AcademicPeriod.CenterId != request.CenterId)
+            return Error.Forbidden("course.student_wrong_center", "Los estudiantes deben pertenecer al mismo centro que el curso.");
+
+        return course;
+    }
+
+    private ImportSummary ProcessRows(IReadOnlyList<StudentCsvRow> rows,
+                                      int centerId,
+                                      Course course,
+                                      Dictionary<string, User> usersByEmail,
+                                      Dictionary<int, Student> studentsByUserId,
+                                      CancellationToken cancellationToken)
+    {
         var errors = new List<StudentCsvImportError>();
         var seenEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var importedCount = 0;
-        var updatedCount = 0;
-        var skippedCount = 0;
+        var imported = 0;
+        var updated = 0;
+        var skipped = 0;
 
         foreach (var row in rows)
         {
@@ -110,28 +137,28 @@ internal sealed partial class ImportStudentsCsvCommandHandler(IAdminScopeService
                 continue;
             }
 
-            if (usersByEmail.TryGetValue(row.Email!, out var existingUser))
+            if (!usersByEmail.TryGetValue(row.Email!, out var existingUser))
             {
-                if (UpdateExistingStudent(row, existingUser, studentsByUserId, request.CenterId, course))
-                    updatedCount++;
-                else
-                    skippedCount++;
+                ImportRow(row, centerId, course);
+                imported++;
+                continue;
             }
+
+            if (UpdateExistingStudent(row, existingUser, studentsByUserId, centerId, course))
+                updated++;
             else
-            {
-                ImportRow(row, request.CenterId, course);
-                importedCount++;
-            }
+                skipped++;
         }
 
-        if (importedCount == 0 && updatedCount == 0 && skippedCount == 0)
-            return Error.Validation("csv.no_valid_rows", "El archivo no contiene ninguna fila valida para importar.");
+        return new ImportSummary(imported, updated, skipped, errors);
+    }
 
-        var save = await persistence.TrySaveChangesAsync(KnownPersistenceErrors, cancellationToken);
-        if (save.IsFailure)
-            return save.Error;
-
-        return new ImportStudentsCsvResponse(importedCount, updatedCount, skippedCount, errors.Count, errors);
+    private sealed record ImportSummary(int Imported,
+                                        int Updated,
+                                        int Skipped,
+                                        IReadOnlyList<StudentCsvImportError> Errors)
+    {
+        public bool HasProcessedRows => Imported + Updated + Skipped > 0;
     }
 
     private bool UpdateExistingStudent(StudentCsvRow row,

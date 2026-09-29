@@ -8,22 +8,30 @@ internal sealed class SubjectAdminConfiguration : IEntityTypeConfiguration<Subje
 {
     public void Configure(EntityTypeBuilder<SubjectAdmin> builder)
     {
-        builder.ToTable("SubjectAdmin", "academic");
+        builder.ToTable("subject_admin", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.SubjectId)
+            .HasColumnName("subject_id")
             .IsRequired();
 
         builder.Property(x => x.UserId)
+            .HasColumnName("user_id")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasOne(x => x.User)
             .WithMany()
@@ -33,6 +41,6 @@ internal sealed class SubjectAdminConfiguration : IEntityTypeConfiguration<Subje
         builder.HasIndex(x => new { x.SubjectId, x.UserId })
             .IsUnique()
             .HasDatabaseName("IX_SubjectAdmin_SubjectId_UserId")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
     }
 }

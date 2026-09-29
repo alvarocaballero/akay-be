@@ -9,37 +9,46 @@ internal sealed class UserRoleAssignmentConfiguration : IEntityTypeConfiguration
 {
     public void Configure(EntityTypeBuilder<UserRoleAssignment> builder)
     {
-        builder.ToTable("UserRoleAssignment", "identity");
+        builder.ToTable("user_role_assignment", "identity");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.UserId)
+            .HasColumnName("user_id")
             .IsRequired();
 
-        builder.Property(x => x.CenterId);
+        builder.Property(x => x.CenterId)
+            .HasColumnName("center_id");
 
         builder.Property(x => x.Role)
+            .HasColumnName("role")
             .IsRequired()
             .HasConversion<int>();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasIndex(x => new { x.UserId, x.Role })
             .IsUnique()
             .HasDatabaseName("IX_UserRoleAssignment_UserId_Role_Global")
-            .HasFilter("[CenterId] IS NULL AND [DeletedAt] IS NULL");
+            .HasFilter("center_id IS NULL AND deleted_at IS NULL");
 
         builder.HasIndex(x => new { x.UserId, x.CenterId, x.Role })
             .IsUnique()
             .HasDatabaseName("IX_UserRoleAssignment_UserId_CenterId_Role")
-            .HasFilter("[CenterId] IS NOT NULL AND [DeletedAt] IS NULL");
+            .HasFilter("center_id IS NOT NULL AND deleted_at IS NULL");
 
         builder.ToTable(t => t.HasCheckConstraint("CK_UserRoleAssignment_Role_CenterId",
-            "([Role] = 1 AND [CenterId] IS NULL) OR ([Role] IN (2, 3, 4) AND [CenterId] IS NOT NULL)"));
+            "(role = 1 AND center_id IS NULL) OR (role IN (2, 3, 4) AND center_id IS NOT NULL)"));
     }
 }

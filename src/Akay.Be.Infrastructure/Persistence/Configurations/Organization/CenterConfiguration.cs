@@ -8,31 +8,40 @@ internal sealed class CenterConfiguration : IEntityTypeConfiguration<Center>
 {
     public void Configure(EntityTypeBuilder<Center> builder)
     {
-        builder.ToTable(nameof(Center), "organization");
+        builder.ToTable("center", "organization");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.Name)
+            .HasColumnName("name")
             .IsRequired()
             .HasMaxLength(200);
 
         builder.Property(x => x.Code)
+            .HasColumnName("code")
             .IsRequired()
             .HasMaxLength(50);
 
         builder.Property(x => x.IsActive)
+            .HasColumnName("is_active")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasIndex(x => x.Code)
             .IsUnique()
             .HasDatabaseName("IX_Center_Code")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
     }
 }

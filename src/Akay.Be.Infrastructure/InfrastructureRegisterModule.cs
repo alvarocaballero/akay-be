@@ -17,7 +17,7 @@ using Akay.To.Azure.Infrastructure.SignalR;
 using Akay.To.Azure.Infrastructure.TableStorage;
 using Akay.To.Core.Infrastructure.Caching;
 using Akay.To.Core.Infrastructure.Http;
-using Akay.To.EF.SqlServer.Infrastructure.DependencyInjection;
+using Akay.To.EF.Npgsql.Infrastructure.DependencyInjection;
 using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,7 +47,8 @@ public static class InfrastructureRegisterModule
             .AddAzureCognitiveTranslatorServices(settings.TranslatorSettings)
             .AddHttpClients(settings.HttpClientSettings, settings.Application?.Name, settings.Application?.Version)
             .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!)
-            .AddSqlServerEFContext<ApplicationDbContext>(settings);
+            //.AddSqlServerEFContext<ApplicationDbContext>(settings)
+            .AddNpgsqlEFContext<ApplicationDbContext>(settings);
 
         services
             .AddServices()

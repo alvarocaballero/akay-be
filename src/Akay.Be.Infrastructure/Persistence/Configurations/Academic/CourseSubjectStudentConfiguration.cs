@@ -8,22 +8,30 @@ internal sealed class CourseSubjectStudentConfiguration : IEntityTypeConfigurati
 {
     public void Configure(EntityTypeBuilder<CourseSubjectStudent> builder)
     {
-        builder.ToTable("CourseSubjectStudent", "academic");
+        builder.ToTable("course_subject_student", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.CourseSubjectId)
+            .HasColumnName("course_subject_id")
             .IsRequired();
 
         builder.Property(x => x.StudentCourseId)
+            .HasColumnName("student_course_id")
             .IsRequired();
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasOne(x => x.StudentCourse)
             .WithMany()
@@ -33,6 +41,6 @@ internal sealed class CourseSubjectStudentConfiguration : IEntityTypeConfigurati
         builder.HasIndex(x => new { x.CourseSubjectId, x.StudentCourseId })
             .IsUnique()
             .HasDatabaseName("IX_CourseSubjectStudent_CourseSubjectId_StudentCourseId")
-            .HasFilter("[DeletedAt] IS NULL");
+            .HasFilter("deleted_at IS NULL");
     }
 }

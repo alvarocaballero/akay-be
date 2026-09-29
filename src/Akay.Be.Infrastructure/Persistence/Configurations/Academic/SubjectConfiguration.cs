@@ -8,23 +8,31 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
 {
     public void Configure(EntityTypeBuilder<Subject> builder)
     {
-        builder.ToTable(nameof(Subject), "academic");
+        builder.ToTable("subject", "academic");
 
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id)
+            .HasColumnName("id");
+
         builder.Property(x => x.Name)
+            .HasColumnName("name")
             .IsRequired()
             .HasMaxLength(200);
 
         builder.Property(x => x.Description)
+            .HasColumnName("description")
             .HasMaxLength(2000);
 
         builder.Property(x => x.CreatedAt)
+            .HasColumnName("created_at")
             .IsRequired();
 
-        builder.Property(x => x.UpdatedAt);
+        builder.Property(x => x.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(x => x.DeletedAt);
+        builder.Property(x => x.DeletedAt)
+            .HasColumnName("deleted_at");
 
         builder.HasMany(x => x.Centers)
             .WithOne(x => x.Subject)
