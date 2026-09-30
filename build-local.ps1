@@ -10,6 +10,7 @@ $slnxPath = Join-Path $scriptDir "Akay.Be.slnx"
 # Verify Akay.To projects exist
 $corePath = Join-Path $scriptDir "..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" | Resolve-Path
 $azurePath = Join-Path $scriptDir "..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" | Resolve-Path
+$azureIdentityPath = Join-Path $scriptDir "..\Akay.To\Akay.To.Azure.Identity\Akay.To.Azure.Identity.csproj" | Resolve-Path
 $rebusPath = Join-Path $scriptDir "..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" | Resolve-Path
 
 if (-not (Test-Path $corePath)) {
@@ -18,6 +19,10 @@ if (-not (Test-Path $corePath)) {
 }
 if (-not (Test-Path $azurePath)) {
     Write-Error "Akay.To.Azure project not found at: $azurePath"
+    exit 1
+}
+if (-not (Test-Path $azureIdentityPath)) {
+    Write-Error "Akay.To.Azure.Identity project not found at: $azureIdentityPath"
     exit 1
 }
 if (-not (Test-Path $rebusPath)) {
@@ -32,10 +37,12 @@ $ns.AddNamespace("s", "http://schemas.microsoft.com/developer/msbuild/2003")
 
 $hasCore = $false
 $hasAzure = $false
+$hasAzureIdentity = $false
 $hasRebus = $false
 foreach ($proj in $slnx.Solution.Project) {
     if ($proj.Path -like "*Akay.To.Core*") { $hasCore = $true }
-    if ($proj.Path -like "*Akay.To.Azure*") { $hasAzure = $true }
+    if ($proj.Path -like "*Akay.To.Azure/Akay.To.Azure.csproj") { $hasAzure = $true }
+    if ($proj.Path -like "*Akay.To.Azure.Identity*") { $hasAzureIdentity = $true }
     if ($proj.Path -like "*Akay.To.Messaging.Rebus*") { $hasRebus = $true }
 }
 
@@ -53,6 +60,13 @@ if (-not $hasAzure) {
     $slnx.Solution.AppendChild($projNode) | Out-Null
     $modified = $true
     Write-Host "Added Akay.To.Azure to solution."
+}
+if (-not $hasAzureIdentity) {
+    $projNode = $slnx.CreateElement("Project")
+    $projNode.SetAttribute("Path", "../Akay.To/Akay.To.Azure.Identity/Akay.To.Azure.Identity.csproj")
+    $slnx.Solution.AppendChild($projNode) | Out-Null
+    $modified = $true
+    Write-Host "Added Akay.To.Azure.Identity to solution."
 }
 if (-not $hasRebus) {
     $projNode = $slnx.CreateElement("Project")
