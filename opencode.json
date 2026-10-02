@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "akay-to": {
+      "path": "../Akay.To",
+      "description": "Akay.To building blocks, architecture knowledge and source"
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "*": "ask",
+      "C:/Develop/Akay/**": "allow"
+    }
+  }
+}

@@ -25,11 +25,8 @@
 
   <ItemGroup>
     <PackageReference Include="Akay.To.AI" />
-    <PackageReference Include="Akay.To.Azure"
-                      Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj')" />
-    <PackageReference Include="Akay.To.EF.Npgsql"
-                      Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.EF.Npgsql\Akay.To.EF.Npgsql.csproj')" />
-    <PackageReference Include="Akay.To.Messaging.Rebus"
-                      Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj')" />
+    <PackageReference Include="Akay.To.Azure" />
+    <PackageReference Include="Akay.To.EF.Npgsql" />
+    <PackageReference Include="Akay.To.Messaging.Rebus" />
   </ItemGroup>
 </Project>

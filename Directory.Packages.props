@@ -4,11 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Akay.To.AI" Version="0.0.6" />
-    <PackageVersion Include="Akay.To.Azure" Version="2.0.3" />
+    <PackageVersion Include="Akay.To.Azure" Version="2.0.5" />
     <PackageVersion Include="Akay.To.Core" Version="2.0.1" />
-    <PackageVersion Include="Akay.To.EF.Npgsql" Version="2.0.1" />
+    <PackageVersion Include="Akay.To.EF.Npgsql" Version="2.0.3" />
     <PackageVersion Include="Akay.To.EF.SqlServer" Version="2.0.1" />
-    <PackageVersion Include="Akay.To.Messaging.Rebus" Version="1.0.7" />
+    <PackageVersion Include="Akay.To.Messaging.Rebus" Version="1.0.9" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />

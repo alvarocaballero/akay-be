@@ -48,5 +48,5 @@ internal sealed class SubjectRepository(ApplicationDbContext context) : BaseRepo
 
     public void Remove(SubjectCenter center) => context.Remove(center);
 
-public void Remove(SubjectAdmin admin) => context.Remove(admin);
+    public void Remove(SubjectAdmin admin) => context.Remove(admin);
 }
