@@ -6,6 +6,24 @@
     <Project Path="src/Akay.Be.Host/Akay.Be.Host.csproj" />
     <Project Path="src/Akay.Be.Infrastructure/Akay.Be.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Akay.Be.Host/">
+    <File Path="src/Akay.Be.Host/Akay.Be.Host.csproj.user" />
+    <File Path="src/Akay.Be.Host/appsettings.Staging.json" />
+    <File Path="src/Akay.Be.Host/Dockerfile" />
+  </Folder>
+  <Folder Name="/Akay.Be.Host/Consumers/">
+    <File Path="src/Akay.Be.Host/Consumers/GenerateLearningHubReportConsumer.cs" />
+  </Folder>
+  <Folder Name="/Akay.Be.Host/Controllers/">
+    <File Path="src/Akay.Be.Host/Controllers/.gitkeep" />
+    <File Path="src/Akay.Be.Host/Controllers/AuthController.cs" />
+    <File Path="src/Akay.Be.Host/Controllers/LearningHubController.cs" />
+    <File Path="src/Akay.Be.Host/Controllers/SubjectsController.cs" />
+  </Folder>
+  <Folder Name="/Akay.Be.Host/Persistence/" />
+  <Folder Name="/Akay.Be.Host/Properties/">
+    <File Path="src/Akay.Be.Host/Properties/launchSettings.json" />
+  </Folder>
   <Folder Name="/solution items/">
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
@@ -25,8 +43,8 @@
     <Project Path="test/Akay.Be.Infrastructure.Tests/Akay.Be.Infrastructure.Tests.csproj" />
   </Folder>
   <Project Path="../Akay.To/Akay.To.AI/Akay.To.AI.csproj" />
-  <Project Path="../Akay.To/Akay.To.Azure/Akay.To.Azure.csproj" />
   <Project Path="../Akay.To/Akay.To.Azure.Identity/Akay.To.Azure.Identity.csproj" />
+  <Project Path="../Akay.To/Akay.To.Azure/Akay.To.Azure.csproj" />
   <Project Path="../Akay.To/Akay.To.Core/Akay.To.Core.csproj" />
   <Project Path="../Akay.To/Akay.To.EF.Npgsql/Akay.To.EF.Npgsql.csproj" />
   <Project Path="../Akay.To/Akay.To.EF/Akay.To.EF.csproj" />

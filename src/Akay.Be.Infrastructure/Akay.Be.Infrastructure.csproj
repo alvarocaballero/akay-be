@@ -3,6 +3,11 @@
     <InternalsVisibleTo Include="Akay.Be.Infrastructure.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.AI\Akay.To.AI.csproj" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.EF.Npgsql\Akay.To.EF.Npgsql.csproj" />
+    <ProjectReference Include="..\..\..\Akay.To\Akay.To.Messaging.Rebus\Akay.To.Messaging.Rebus.csproj" />
     <ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
     <ProjectReference Include="..\Akay.Be.Domain\Akay.Be.Domain.csproj" />
   </ItemGroup>
@@ -21,12 +26,5 @@
     <Folder Include="Persistence\Configurations\" />
     <Folder Include="Persistence\Repositories\" />
     <Folder Include="Persistence\Seed\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Akay.To.AI" />
-    <PackageReference Include="Akay.To.Azure" />
-    <PackageReference Include="Akay.To.EF.Npgsql" />
-    <PackageReference Include="Akay.To.Messaging.Rebus" />
   </ItemGroup>
 </Project>

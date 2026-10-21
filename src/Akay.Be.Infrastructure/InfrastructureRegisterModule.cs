@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Akay.Be.Application;
+using Akay.Be.Domain;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Organization;
@@ -17,6 +18,7 @@ using Akay.To.Azure.Infrastructure.SignalR;
 using Akay.To.Azure.Infrastructure.TableStorage;
 using Akay.To.Core.Infrastructure.Caching;
 using Akay.To.Core.Infrastructure.Http;
+using Akay.To.EF.Infrastructure.Outbox;
 using Akay.To.EF.Npgsql.Infrastructure.DependencyInjection;
 using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
@@ -48,7 +50,10 @@ public static class InfrastructureRegisterModule
             .AddHttpClients(settings.HttpClientSettings, settings.Application?.Name, settings.Application?.Version)
             .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!)
             //.AddSqlServerEFContext<ApplicationDbContext>(settings)
-            .AddNpgsqlEFContext<ApplicationDbContext>(settings);
+            .AddNpgsqlEFContext<ApplicationDbContext>(settings)
+            // Los contratos entregables son los eventos del outbox, declarados en el ensamblado de dominio.
+            // El ancla es un marcador del propio ensamblado, no un evento concreto que puede desaparecer.
+            .AddOutboxProcessor<ApplicationDbContext>(settings, typeof(DomainAssemblyReference).Assembly);
 
         services
             .AddServices()

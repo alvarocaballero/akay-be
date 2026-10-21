@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
+	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj" />
 	<ProjectReference Include="..\Akay.Be.Application\Akay.Be.Application.csproj" />
 	<ProjectReference Include="..\Akay.Be.Infrastructure\Akay.Be.Infrastructure.csproj" />
   </ItemGroup>
@@ -18,13 +20,6 @@
 
   <ItemGroup Condition="'$(UseLocalAkayTo)' == 'true' And Exists('..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj')">
 	<ProjectReference Include="..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Akay.To.Core"
-                      Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.Core\Akay.To.Core.csproj')" />
-    <PackageReference Include="Akay.To.Azure"
-                      Condition="'$(UseLocalAkayTo)' != 'true' Or !Exists('..\..\..\Akay.To\Akay.To.Azure\Akay.To.Azure.csproj')" />
   </ItemGroup>
 
   <ItemGroup>
