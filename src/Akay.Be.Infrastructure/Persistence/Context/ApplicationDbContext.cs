@@ -24,6 +24,8 @@ public sealed class ApplicationDbContext(IUserContext userContext,
     public DbSet<CourseSubjectStudent> CourseSubjectStudents => Set<CourseSubjectStudent>();
     public DbSet<StudentCourse> StudentCourses => Set<StudentCourse>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Topic> Topics => Set<Topic>();
+    public DbSet<TopicContent> TopicContents => Set<TopicContent>();
     public DbSet<SubjectCenter> SubjectCenters => Set<SubjectCenter>();
     public DbSet<SubjectAdmin> SubjectAdmins => Set<SubjectAdmin>();
     public DbSet<Student> Students => Set<Student>();
