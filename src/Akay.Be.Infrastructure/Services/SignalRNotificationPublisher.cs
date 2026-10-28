@@ -7,10 +7,6 @@ namespace Akay.Be.Infrastructure.Services;
 public sealed class SignalRNotificationPublisher(ISignalRHubService<NotificationHub, NotificationMessage> hubService)
     : INotificationPublisher
 {
-    public Task PublishAsync(string userId, NotificationMessage message, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        // Akay.To currently has no cancellable send overload. Do not detach an in-flight publication.
-        return hubService.SendUserAsync(userId, message);
-    }
+    public Task PublishAsync(string userId, NotificationMessage message, CancellationToken cancellationToken) =>
+        hubService.SendUserAsync(userId, message, cancellationToken: cancellationToken);
 }

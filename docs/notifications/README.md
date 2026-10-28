@@ -54,8 +54,8 @@ The hub is receive-only: unlike the reusable demo `BaseHub`, it exposes no clien
 
 - Serialization/validation or persistence failure prevents publication and propagates to the caller. Callers must not retry an already committed business operation just because notification creation failed.
 - Publication failure is logged as a structured warning, without a payload dump. Stored notifications are neither removed nor persisted again. Ephemeral messages may be lost.
-- Cancellation before work starts is honored. Once persistence commits, cancellation before publication is logged as a best-effort publication failure; the stored record remains available.
-- Akay.To's current `SendUserAsync` has no CancellationToken overload. Cancellation is checked before invoking it; an in-flight send is awaited, not detached or independently retried.
+- Cancellation before work starts is honored. Once persistence commits, the token is forwarded to the SignalR send; a publication failure caused by cancellation is logged as best effort and the stored record remains available.
+- `Akay.To.Azure` forwards the token to SignalR (`SendAsync(..., cancellationToken)`). Transport cancellation is best effort: a canceled token does not guarantee the message was not delivered.
 - No Outbox, persistent retries, delivery receipts, deduplication, correlation columns, read synchronization or retention jobs are added. The application's existing unrelated Outbox configuration is unchanged.
 
 ## Verification

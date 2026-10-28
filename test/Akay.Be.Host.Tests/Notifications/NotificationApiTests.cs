@@ -12,6 +12,7 @@ using Akay.Be.Domain.Entities.Notification;
 using Akay.Be.Host.Controllers;
 using Akay.Be.Infrastructure.Contexts;
 using Akay.Be.Infrastructure.Services;
+using Akay.Be.Infrastructure.SignalRHubs;
 using Akay.To.Azure.Infrastructure.SignalR;
 using Akay.To.Core.Application.ApplicationSettings;
 using Akay.To.Core.Application.Responses;
@@ -165,6 +166,7 @@ public sealed partial class NotificationApiTests
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        app.MapHub<NotificationHub>("/hub/notifications").RequireCors("AllowSpecificOrigins");
         await app.StartAsync(TestContext.Current.CancellationToken);
         return app;
     }

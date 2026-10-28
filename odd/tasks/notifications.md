@@ -363,3 +363,12 @@ User: "ok, adelante. Bien visto"
 - User moved the database schema and table to singular: `notification.notification`. Configuration, reviewed DDL, and raw SQL used by PostgreSQL tests were aligned; tests now assert `GetSchema()`/`GetTableName()` equal `notification`.
 - User reported the primary key constraint keeps its original name `PK_notifications`. DDL now uses that name and the EF model declares `HasKey(...).HasName("PK_notifications")`, so model-created schemas and the reviewed script agree; the DDL test asserts the PK index name too.
 - Full suite after both changes: **260 passed, zero failed/skipped**, exit 0.
+
+### L9 - CancellationToken propagated through Akay.To SignalR
+
+- User decided to fix the limitation at its source (option A): every `ISignalRHubService` send/group-management method now takes an optional trailing `CancellationToken`.
+- Akay.To changes: `ISignalRHubService.cs` and `AzureSignalRHubService.cs` forward the token to `SendAsync`/`AddToGroupAsync`; `BaseHub` passes `Context.ConnectionAborted`; knowledge and package docs updated. New `AzureSignalRHubServiceTests` verify token propagation for user sends and group joins.
+- Akay.Be: `SignalRNotificationPublisher` (now moved to `Infrastructure/Services`) forwards the token and the workaround comment was removed. Test harness now maps the hub explicitly because mapping moved into `InfrastructureRegisterModule.AddHubs`.
+- Verification: Akay.To.Azure.Tests 109 passed; Akay.Be 260 passed, zero failed/skipped, exit 0 (local project references).
+- Release coordination pending: Akay.Be CI still references `Akay.To.Azure 2.0.5` from NuGet. The new API requires versioning/publishing `Akay.To.Azure` and bumping `Directory.Packages.props`; publishing was not authorized, so it was not done. Note the optional-parameter addition is source-compatible but binary-breaking.
+- Cancellation is best effort at transport level: forwarding the token does not guarantee non-delivery.

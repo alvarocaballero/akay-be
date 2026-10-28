@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Akay.Be.Infrastructure.Persistence.Configurations.Notification;
 
-internal sealed class NotificationConfiguration : IEntityTypeConfiguration<PersistentNotification>
+internal sealed class PersistentNotificationConfiguration : IEntityTypeConfiguration<PersistentNotification>
 {
     public void Configure(EntityTypeBuilder<PersistentNotification> builder)
     {
