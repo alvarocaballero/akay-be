@@ -1,5 +1,6 @@
 using Akay.Be.Domain.Entities.Academic;
 using Akay.Be.Domain.Entities.Identity;
+using Akay.Be.Domain.Entities.Notification;
 using Akay.Be.Domain.Entities.Organization;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.EF.Infrastructure.DbContexts;
@@ -29,6 +30,7 @@ public sealed class ApplicationDbContext(IUserContext userContext,
     public DbSet<SubjectCenter> SubjectCenters => Set<SubjectCenter>();
     public DbSet<SubjectAdmin> SubjectAdmins => Set<SubjectAdmin>();
     public DbSet<Student> Students => Set<Student>();
+    public DbSet<PersistentNotification> Notifications => Set<PersistentNotification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -24,5 +24,6 @@
 
   <ItemGroup>
 	<Folder Include="Docs\Wiki\" />
+	<Folder Include="Notifications\" />
   </ItemGroup>
 </Project>

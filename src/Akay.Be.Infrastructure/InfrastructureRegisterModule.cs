@@ -1,13 +1,16 @@
 ﻿using System.Reflection;
 using Akay.Be.Application;
-using Akay.Be.Domain;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Identity;
+using Akay.Be.Application.Abstractions.Persistence.Repositories.Notification;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Organization;
 using Akay.Be.Application.Abstractions.Services;
+using Akay.Be.Application.Notifications;
+using Akay.Be.Domain;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.Be.Infrastructure.Persistence.Repositories.Academic;
 using Akay.Be.Infrastructure.Persistence.Repositories.Identity;
+using Akay.Be.Infrastructure.Persistence.Repositories.Notification;
 using Akay.Be.Infrastructure.Persistence.Repositories.Organization;
 using Akay.Be.Infrastructure.Services;
 using Akay.Be.Infrastructure.SignalRHubs;
@@ -64,8 +67,8 @@ public static class InfrastructureRegisterModule
 
     public static WebApplication AddHubs(this WebApplication app)
     {
-        app.MapHub<DemoSignalRHub>("/hub/demosignalrhub")
-           .RequireCors("AllowSpecificOrigins");
+        app.MapHub<DemoSignalRHub>("/hub/demosignalrhub").RequireCors("AllowSpecificOrigins");
+        app.MapHub<NotificationHub>("/hub/notifications").RequireCors("AllowSpecificOrigins");
 
         return app;
     }
@@ -74,6 +77,7 @@ public static class InfrastructureRegisterModule
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         return services
+            .AddScoped<INotificationPublisher, SignalRNotificationPublisher>()
             .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>();
     }
     private static IServiceCollection AddRepositories(this IServiceCollection services)
@@ -84,7 +88,8 @@ public static class InfrastructureRegisterModule
             .AddScoped<IAcademicPeriodRepository, AcademicPeriodRepository>()
             .AddScoped<ICourseRepository, CourseRepository>()
             .AddScoped<ISubjectRepository, SubjectRepository>()
-            .AddScoped<IStudentRepository, StudentRepository>();
+            .AddScoped<IStudentRepository, StudentRepository>()
+            .AddScoped<INotificationRepository, NotificationRepository>();
     }
 
 }

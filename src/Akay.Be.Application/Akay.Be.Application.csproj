@@ -17,8 +17,4 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Akay.Be.Application.Tests" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Abstractions\Persistence\" />
-  </ItemGroup>
 </Project>

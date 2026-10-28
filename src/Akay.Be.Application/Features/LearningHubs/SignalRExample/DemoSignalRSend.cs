@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Akay.Be.Application.Abstractions.Services;
+using Akay.Be.Application.Notifications;
 using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Results;
@@ -20,10 +21,10 @@ public class DemoSignalRSendHandler(IDemoSignalRHubService service,
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var userMessage  = new Notifications.DemoSignalRNotification(request.Id, $"Mensaje directo (#{x + 1})", DateTime.UtcNow);
-            var autoMessage  = new Notifications.DemoSignalRNotification(request.Id, $"Grupo automatico user-{userId} (#{x + 1})", DateTime.UtcNow);
-            var demoMessage  = new Notifications.DemoSignalRNotification(request.Id, $"Grupo manual DemoGroup (#{x + 1})", DateTime.UtcNow);
-            var broadMessage = new Notifications.DemoSignalRNotification(request.Id, $"Broadcast to everyone (#{x + 1})", DateTime.UtcNow);
+            var userMessage = new DemoSignalRNotification(request.Id, $"Mensaje directo (#{x + 1})", DateTime.UtcNow);
+            var autoMessage = new DemoSignalRNotification(request.Id, $"Grupo automatico user-{userId} (#{x + 1})", DateTime.UtcNow);
+            var demoMessage = new DemoSignalRNotification(request.Id, $"Grupo manual DemoGroup (#{x + 1})", DateTime.UtcNow);
+            var broadMessage = new DemoSignalRNotification(request.Id, $"Broadcast to everyone (#{x + 1})", DateTime.UtcNow);
 
             await service.NotifyUserAsync(userId, userMessage);
             await service.NotifyGroupAsync($"user-{userId}", autoMessage);
