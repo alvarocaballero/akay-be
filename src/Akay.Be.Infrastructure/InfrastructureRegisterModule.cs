@@ -88,6 +88,7 @@ public static class InfrastructureRegisterModule
             .AddScoped<IAcademicPeriodRepository, AcademicPeriodRepository>()
             .AddScoped<ICourseRepository, CourseRepository>()
             .AddScoped<ISubjectRepository, SubjectRepository>()
+            .AddScoped<ITopicRepository, TopicRepository>()
             .AddScoped<IStudentRepository, StudentRepository>()
             .AddScoped<INotificationRepository, NotificationRepository>();
     }

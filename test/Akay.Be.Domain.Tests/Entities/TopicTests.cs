@@ -132,4 +132,100 @@ public class TopicTests
 
         Assert.Null(topic.Description);
     }
+
+    [Fact]
+    public void Create_DefaultDisplayOrder_IsOne()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+
+        Assert.Equal(1, topic.DisplayOrder);
+    }
+
+    [Fact]
+    public void Create_WithDisplayOrder_SetsDisplayOrder()
+    {
+        var topic = Topic.Create(1, "Topic", null, 4);
+
+        Assert.Equal(4, topic.DisplayOrder);
+    }
+
+    [Fact]
+    public void Create_InvalidDisplayOrder_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => Topic.Create(1, "Topic", null, 0));
+
+        Assert.Contains("displayorder", ex.Message.ToLower());
+    }
+
+    [Fact]
+    public void ChangeDisplayOrder_Updates()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+        topic.ChangeDisplayOrder(7);
+
+        Assert.Equal(7, topic.DisplayOrder);
+    }
+
+    [Fact]
+    public void ChangeDisplayOrder_Invalid_Throws()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+
+        Assert.Throws<ArgumentException>(() => topic.ChangeDisplayOrder(0));
+    }
+
+    [Theory]
+    [InlineData(TopicProcessingState.Draft)]
+    [InlineData(TopicProcessingState.Processing)]
+    [InlineData(TopicProcessingState.Ready)]
+    [InlineData(TopicProcessingState.Failed)]
+    public void ChangeProcessingState_Valid_Updates(TopicProcessingState state)
+    {
+        var topic = Topic.Create(1, "Topic", null);
+        topic.ChangeProcessingState(state);
+
+        Assert.Equal(state, topic.ProcessingState);
+    }
+
+    [Fact]
+    public void ChangeProcessingState_Invalid_Throws()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+
+        Assert.Throws<ArgumentException>(() => topic.ChangeProcessingState((TopicProcessingState)99));
+    }
+
+    [Theory]
+    [InlineData(TopicIndexingState.NotIndexed)]
+    [InlineData(TopicIndexingState.Pending)]
+    [InlineData(TopicIndexingState.Indexing)]
+    [InlineData(TopicIndexingState.Indexed)]
+    [InlineData(TopicIndexingState.Failed)]
+    public void ChangeIndexingState_Valid_Updates(TopicIndexingState state)
+    {
+        var topic = Topic.Create(1, "Topic", null);
+        topic.ChangeIndexingState(state);
+
+        Assert.Equal(state, topic.IndexingState);
+    }
+
+    [Fact]
+    public void ChangeIndexingState_Invalid_Throws()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+
+        Assert.Throws<ArgumentException>(() => topic.ChangeIndexingState((TopicIndexingState)99));
+    }
+
+    [Fact]
+    public void ChangeActivation_Updates()
+    {
+        var topic = Topic.Create(1, "Topic", null);
+
+        topic.ChangeActivation(true);
+        Assert.True(topic.IsActive);
+
+        topic.ChangeActivation(false);
+        Assert.False(topic.IsActive);
+    }
 }

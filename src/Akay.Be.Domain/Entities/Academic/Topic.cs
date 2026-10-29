@@ -16,7 +16,8 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
     public string? Description { get; private set; }
     public TopicProcessingState ProcessingState { get; private set; }
     public TopicIndexingState IndexingState { get; private set; }
-    public bool IsActive { get; private set; }
+    public int DisplayOrder { get; private set; }
+    public bool IsActive { get; private set; º }
 #pragma warning disable S1144
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -24,12 +25,15 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
 #pragma warning restore S1144
     public IReadOnlyCollection<TopicContent> Contents => _contents.AsReadOnly();
 
-    public static Topic Create(int subjectId, string name, string? description = null)
+    public static Topic Create(int subjectId, string name, string? description = null, int displayOrder = 1)
     {
         if (subjectId <= 0)
             throw new ArgumentException("SubjectId must be greater than zero.", nameof(subjectId));
 
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        if (displayOrder <= 0)
+            throw new ArgumentException("DisplayOrder must be greater than zero.", nameof(displayOrder));
 
         return new Topic
         {
@@ -38,7 +42,8 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
             Description = description,
             ProcessingState = TopicProcessingState.Draft,
             IndexingState = TopicIndexingState.NotIndexed,
-            IsActive = false
+            IsActive = false,
+            DisplayOrder = displayOrder
         };
     }
 
@@ -84,4 +89,32 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
         Description = description;
     }
 
+    public void ChangeDisplayOrder(int displayOrder)
+    {
+        if (displayOrder <= 0)
+            throw new ArgumentException("DisplayOrder must be greater than zero.", nameof(displayOrder));
+
+        DisplayOrder = displayOrder;
+    }
+
+    public void ChangeProcessingState(TopicProcessingState processingState)
+    {
+        if (!Enum.IsDefined(processingState))
+            throw new ArgumentException("Invalid processing state.", nameof(processingState));
+
+        ProcessingState = processingState;
+    }
+
+    public void ChangeIndexingState(TopicIndexingState indexingState)
+    {
+        if (!Enum.IsDefined(indexingState))
+            throw new ArgumentException("Invalid indexing state.", nameof(indexingState));
+
+        IndexingState = indexingState;
+    }
+
+    public void ChangeActivation(bool isActive)
+    {
+        IsActive = isActive;
+    }
 }

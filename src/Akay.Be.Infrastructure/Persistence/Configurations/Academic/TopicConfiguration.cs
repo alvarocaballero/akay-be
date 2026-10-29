@@ -42,6 +42,10 @@ internal sealed class TopicConfiguration : IEntityTypeConfiguration<Topic>
             .HasColumnName("is_active")
             .IsRequired();
 
+        builder.Property(x => x.DisplayOrder)
+            .HasColumnName("display_order")
+            .IsRequired();
+
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
@@ -52,8 +56,8 @@ internal sealed class TopicConfiguration : IEntityTypeConfiguration<Topic>
         builder.Property(x => x.DeletedAt)
             .HasColumnName("deleted_at");
 
-        builder.HasIndex(x => x.SubjectId)
-            .HasDatabaseName("IX_Topic_SubjectId");
+        builder.HasIndex(x => new { x.SubjectId, x.DisplayOrder })
+            .HasDatabaseName("IX_Topic_SubjectId_DisplayOrder");
 
         builder.HasOne(x => x.Subject)
             .WithMany()
