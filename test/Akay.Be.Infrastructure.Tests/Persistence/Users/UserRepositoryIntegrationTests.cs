@@ -192,4 +192,44 @@ public class UserRepositoryIntegrationTests
         Assert.Equal(2, result.Data.Count);
         Assert.True(result.HasMoreItems);
     }
+
+    [Fact]
+    public async Task GetByIdWithProfileAsync_LoadsProfile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var ctx = CreateContext(Guid.NewGuid().ToString());
+        var repo = new UserRepository(ctx);
+
+        var user = User.Create("profile@example.com", "Profile", "User");
+        user.AssignRole(1, UserRole.Teacher);
+        user.EnsureProfile("en-EN", true);
+
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(ct);
+
+        var result = await repo.GetByIdWithProfileAsync(user.Id, ct);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result!.Profile);
+        Assert.Equal("en-EN", result.Profile!.Language);
+        Assert.Equal(true, result.Profile.DarkMode);
+        Assert.Single(result.RoleAssignments);
+    }
+
+    [Fact]
+    public async Task GetByIdWithProfileAsync_ReturnsNullProfile_WhenUserHasNoProfile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var ctx = CreateContext(Guid.NewGuid().ToString());
+        var repo = new UserRepository(ctx);
+
+        var user = User.Create("noprofile@example.com", "No", "Profile");
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync(ct);
+
+        var result = await repo.GetByIdWithProfileAsync(user.Id, ct);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.Profile);
+    }
 }

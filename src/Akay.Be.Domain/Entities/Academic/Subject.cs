@@ -12,6 +12,7 @@ public sealed class Subject : AggregateRoot<int>, IAuditable, ISoftDeletable
 
     public string Name { get; private set; } = default!;
     public string? Description { get; private set; }
+    public bool IsActive { get; private set; }
 #pragma warning disable S1144
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -35,7 +36,8 @@ public sealed class Subject : AggregateRoot<int>, IAuditable, ISoftDeletable
         var subject = new Subject
         {
             Name = name,
-            Description = description
+            Description = description,
+            IsActive = false
         };
 
         foreach (var centerId in centers)

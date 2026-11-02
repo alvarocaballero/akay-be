@@ -27,9 +27,9 @@ public sealed partial class NotificationApiTests
         var before = Hash();
 
         foreach (var query in new[] { "Page=0", "Page=-1", "PageSize=0", "PageSize=101",
-                                      "Page=2147483647&PageSize=100", "Page=x", "IsRead=x", "SortBy=Title", "IsAscending=true" })
+                                      "Page=2147483647&PageSize=100", "Page=x" })
         {
-            using var response = await client.GetAsync("/notifications?" + query, ct);
+            using var response = await client.GetAsync("/api/notifications?" + query, ct);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(before, Hash());
         }
@@ -39,7 +39,7 @@ public sealed partial class NotificationApiTests
             foreach (var id in new[] { foreign.Id.ToString(), int.MaxValue.ToString(), "0", "bad-request" })
             {
                 var suffix = method == HttpMethod.Patch ? "/read" : "";
-                using var request = new HttpRequestMessage(method, "/notifications/" + id + suffix);
+                using var request = new HttpRequestMessage(method, "/api/notifications/" + id + suffix);
                 using var response = await client.SendAsync(request, ct);
                 Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
                 if (id != "bad-request")
@@ -51,7 +51,7 @@ public sealed partial class NotificationApiTests
             }
         }
 
-        var page = await client.GetFromJsonAsync<JsonElement>("/notifications?Page=1&PageSize=1&IsRead=false&SortBy=CreatedAt&IsAscending=false", ct);
+        var page = await client.GetFromJsonAsync<JsonElement>("/api/notifications?Page=1&PageSize=1", ct);
         Assert.Single(page.GetProperty("data").EnumerateArray());
         Assert.Equal(before, Hash());
     }
@@ -82,6 +82,7 @@ public sealed partial class NotificationApiTests
             Assert.Equal("probe-owner", dto.GetProperty("type").GetString());
             Assert.Equal(42, dto.GetProperty("payload").GetProperty("extra").GetInt32());
             Assert.False(dto.TryGetProperty("notificationId", out _));
+            Assert.False(dto.GetProperty("isPersistent").GetBoolean());
         }
 
         var foreignFrame = await ReadFrameAsync(other, ct);

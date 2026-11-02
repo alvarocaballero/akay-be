@@ -32,7 +32,8 @@ internal sealed class GetSubjectByIdQueryHandler(IAdminScopeService adminScope,
         return new SubjectResponse(subject.Id,
                                    subject.Name,
                                    subject.Description,
-                                   subject.Centers.Select(c => c.CenterId).ToList())
+                                   subject.Centers.Select(c => c.CenterId).ToList(),
+                                   subject.IsActive)
         {
             AdminUsers = adminUsers
                 .Select(u => new AdminUserResponse(u.Id, u.FirstName, u.LastName, u.Email))

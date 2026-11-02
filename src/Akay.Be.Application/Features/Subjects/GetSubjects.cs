@@ -43,7 +43,8 @@ internal sealed class GetSubjectsQueryHandler(IAdminScopeService adminScope,
                 s.Id,
                 s.Name,
                 s.Description,
-                s.Centers.Select(c => c.CenterId).ToList()))
+                s.Centers.Select(c => c.CenterId).ToList(),
+                s.IsActive))
             .ToList();
     }
 }

@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
-    <None Include="..\..\docs\notifications\schema.sql" Link="Notifications\schema.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\db\*.sql" Link="db\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

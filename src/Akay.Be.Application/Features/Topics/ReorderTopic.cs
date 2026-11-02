@@ -28,30 +28,19 @@ internal sealed class ReorderTopicCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var topics = await topicRepository.GetBySubjectIdAsync(topic.SubjectId, cancellationToken);
+        var orderChange = TopicOrdering.MoveTo(topics, topic, request.DisplayOrder);
 
-        var currentPosition = topics.FindIndex(candidate => candidate.Id == topic.Id);
-        if (currentPosition < 0)
+        if (orderChange == TopicOrderChange.TopicNotFound)
             return Error.NotFound("topic.not_found", $"Tema {request.Id} no encontrado.");
 
-        if (request.DisplayOrder < 1 || request.DisplayOrder > topics.Count)
+        if (orderChange == TopicOrderChange.InvalidDisplayOrder)
             return Error.Validation("topic.invalid_display_order",
                                     $"El orden debe estar entre 1 y {topics.Count}.");
 
-        if (currentPosition == request.DisplayOrder - 1)
+        if (orderChange == TopicOrderChange.Unchanged)
             return Result.Success();
 
-        var reordered = topics
-            .Where(candidate => candidate.Id != topic.Id)
-            .ToList();
-
-        reordered.Insert(request.DisplayOrder - 1, topic);
-
-        for (var index = 0; index < reordered.Count; index++)
-        {
-            reordered[index].ChangeDisplayOrder(index + 1);
-        }
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        _ = await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

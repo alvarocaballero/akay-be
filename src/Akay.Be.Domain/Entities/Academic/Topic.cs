@@ -7,6 +7,7 @@ namespace Akay.Be.Domain.Entities.Academic;
 public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
 {
     private readonly List<TopicContent> _contents = [];
+    private readonly List<TopicAdditionalContent> _additionalContents = [];
 
     private Topic() { }
 
@@ -17,13 +18,14 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
     public TopicProcessingState ProcessingState { get; private set; }
     public TopicIndexingState IndexingState { get; private set; }
     public int DisplayOrder { get; private set; }
-    public bool IsActive { get; private set; º }
+    public bool IsActive { get; private set; }
 #pragma warning disable S1144
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
     public IReadOnlyCollection<TopicContent> Contents => _contents.AsReadOnly();
+    public IReadOnlyCollection<TopicAdditionalContent> AdditionalContents => _additionalContents.AsReadOnly();
 
     public static Topic Create(int subjectId, string name, string? description = null, int displayOrder = 1)
     {
@@ -72,6 +74,33 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
 
         if (!_contents.Remove(content))
             throw new InvalidOperationException("Content does not belong to this topic.");
+    }
+
+    public TopicAdditionalContent AddAdditionalContent(string fileName,
+                                                       string contentType,
+                                                       string? sourceContentUrl = null,
+                                                       string? contentUrl = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        var additionalContent = TopicAdditionalContent.Create(Id,
+                                                              fileName,
+                                                              contentType,
+                                                              sourceContentUrl,
+                                                              contentUrl);
+
+        _additionalContents.Add(additionalContent);
+
+        return additionalContent;
+    }
+
+    public void DeleteAdditionalContent(TopicAdditionalContent additionalContent)
+    {
+        ArgumentNullException.ThrowIfNull(additionalContent);
+
+        if (!_additionalContents.Remove(additionalContent))
+            throw new InvalidOperationException("Additional content does not belong to this topic.");
     }
 
     public void ChangeName(string name)

@@ -4,7 +4,7 @@ Use `INotificationService` from Application after committing the business operat
 
 ## Integration
 
-1. Review [schema.sql](schema.sql) and apply it manually to the intended PostgreSQL database before deploying the endpoints. There are no EF migrations or automatic production schema changes.
+1. Review the shared [database baseline](../db/001-baseline.sql) and apply it manually to the intended PostgreSQL database before deploying the endpoints. There are no EF migrations or automatic production schema changes.
 2. Inject `Akay.Be.Application.Notifications.INotificationService` into the use case that produces a notification. Set `UserId` to the local Akay user ID (`int`), **not** the external Entra ID.
 3. Implement `INotification` for transient messages, or `IPersistentNotification` for stored messages. Call `SendAsync(notification, cancellationToken)` after the business commit, outside an ambient transaction.
 
@@ -38,11 +38,19 @@ The existing Akay.To directed client event is **`echo`**, with two arguments: `n
 ```json
 {
   "type": "application.notice",
+  "isPersistent": false,
   "payload": { "userId": 12, "type": "application.notice", "detail": "An update is available" }
 }
 ```
 
-Persistent messages additionally carry `notificationId` (integer), `title`, `message`, and `url` when non-null. Ephemeral messages omit persistence metadata. `Type` is the stable application discriminator; it is not a SignalR method name.
+Persistent messages additionally carry `notificationId` (integer), `title`, `message`, and `url` when non-null, and `isPersistent` is `true`. `IsPersistent` is derived from `notificationId`, so the two cannot disagree; it is transport metadata only and has no database column (the stored row is the persistence itself).
+
+Client routing uses two independent fields, on a single hub:
+
+- `isPersistent` → **what to do**: refresh/increment the unread counter.
+- `type` → **where to apply it**: the client `switch` that updates the current screen.
+
+A single event can therefore do both. A persistent notification may also be relevant to the current page; the client should refresh the counter and still dispatch by `type`. Prefer re-reading `GET /api/notifications/unread-count` on `isPersistent: true` instead of relying only on optimistic increments. `Type` is the stable application discriminator; it is not a SignalR method name. Do not split the transport into per-UI hubs.
 
 Storage keeps the local `int` user identity and a database-generated `int` notification identity, consistent with the rest of the application. Only the SignalR targeting call converts the user id to its invariant string form. Columns follow the project's PostgreSQL `snake_case` convention (`id`, `user_id`, `created_at`, `read_at`).
 
@@ -66,7 +74,7 @@ Run with the existing local Akay.To references:
 dotnet test Akay.Be.slnx --configuration Release -p:UseLocalAkayTo=true
 ```
 
-PostgreSQL tests require Docker and a locally available **`postgres:17.6`** image. They never pull images implicitly; CI prepares the image explicitly. Tests create a disposable container and a new database per case, build the schema from the current EF model, and separately verify the reviewed DDL. No application connection string, existing database or Azure credential is used. The container is automatically removed on disposal. Missing Docker/image is a test failure, not a silent skip.
+PostgreSQL tests require Docker and a locally available **`postgres:17.6`** image. They never pull images implicitly; CI prepares the image explicitly. Tests create a disposable container and a new database per case. Behavior tests build the schema from the current EF model; a separate schema-contract test applies the reviewed baseline and compares every table, column, key and index with the model. No application connection string, existing database or Azure credential is used. The container is automatically removed on disposal. Missing Docker/image is a test failure, not a silent skip.
 
 Host tests use TestServer with real Akay.To-issued JWTs and the existing user context, plus a repository test double. PostgreSQL storage/ownership behavior is independently covered by real-provider tests. The SignalR test exercises the actual Akay.To publisher over three real WebSocket connections: two for one user and one for another.
 

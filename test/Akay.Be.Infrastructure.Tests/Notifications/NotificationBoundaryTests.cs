@@ -57,7 +57,7 @@ public sealed class NotificationBoundaryTests(PostgresFixture postgres) : IClass
         Assert.True(observer.Committed);
         Assert.False(await seedDb.Users.AnyAsync(ct));
         var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
-        var own = Assert.Single((await repository.GetPagedAsync(12, null, 1, 100, ct)).Data);
+        var own = Assert.Single((await repository.GetPagedAsync(12, 1, 100, ct)).Data);
         using var payload = JsonDocument.Parse(own.Payload!);
         Assert.Equal(42, payload.RootElement.GetProperty("extra").GetInt32());
         var foreign = PersistentNotification.Create(99, "probe", "Foreign", "Message", null, null, DateTimeOffset.UtcNow);
@@ -80,7 +80,8 @@ public sealed class NotificationBoundaryTests(PostgresFixture postgres) : IClass
         Assert.True(await repository.MarkReadAsync(12, own.Id, first, ct));
         await repository.MarkAllReadAsync(12, first.AddDays(1), ct);
         await repository.MarkAllReadAsync(12, first.AddDays(2), ct);
-        Assert.Equal(first, Assert.Single((await repository.GetPagedAsync(12, true, 1, 100, ct)).Data).ReadAt);
+        var ownReadAt = await db.Notifications.AsNoTracking().Where(n => n.Id == own.Id).Select(n => n.ReadAt).SingleAsync(ct);
+        Assert.Equal(first, ownReadAt);
         Assert.Equal(0, await repository.GetUnreadCountAsync(12, ct));
         Assert.Equal(1, await repository.GetUnreadCountAsync(99, ct));
         Assert.True(await repository.DeleteForUserAsync(12, own.Id, ct));

@@ -38,7 +38,7 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
         (await dispatcher.Send(new GetUserCentersQuery(), cancellationToken)).ToOk();
 
     [HttpGet("profile")]
-    [EndpointSummary("Devuelve los roles del usuario actual en el centro indicado junto con su perfil.")]
+    [EndpointSummary("Devuelve el idioma y el modo oscuro del perfil del usuario actual, junto con sus roles en el centro indicado.")]
     [ProducesResponseType<UserProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProfile([FromHeader(Name = "X-Center-Id")] int centerId, CancellationToken cancellationToken) =>
@@ -75,6 +75,16 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DeleteUserCommand(id), cancellationToken)).ToNoContent();
+
+    // ─── Profile ──────────────────────────────────────────────────────────────
+
+    [HttpPut("profile")]
+    [EndpointSummary("Crea o actualiza el idioma y el modo oscuro del perfil del usuario actual.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProfile([FromBody] UpdateUserProfileCommand command, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(command, cancellationToken)).ToNoContent();
 
     // ─── Roles ─────────────────────────────────────────────────────────────────
 

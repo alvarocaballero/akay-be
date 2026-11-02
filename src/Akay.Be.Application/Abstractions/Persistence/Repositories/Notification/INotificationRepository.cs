@@ -10,10 +10,9 @@ public interface INotificationRepository : IBaseRepository<PersistentNotificatio
     Task PersistAsync(PersistentNotification notification, CancellationToken cancellationToken);
 
     Task<PagedResponse<List<PersistentNotification>>> GetPagedAsync(int userId,
-                                                                              bool? isRead,
-                                                                              int page,
-                                                                              int pageSize,
-                                                                              CancellationToken cancellationToken);
+                                                              int page,
+                                                              int pageSize,
+                                                              CancellationToken cancellationToken);
 
     Task<int> GetUnreadCountAsync(int userId, CancellationToken cancellationToken);
 

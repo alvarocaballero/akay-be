@@ -23,7 +23,9 @@ public sealed class NotificationService(INotificationRepository repository,
 
         // Serialize the runtime type, including additional fields when called through INotification.
         var payload = JsonSerializer.SerializeToElement(notification, notification.GetType(), JsonSerializerOptions.Web);
+
         PersistentNotification? stored = null;
+
         if (notification is IPersistentNotification persistent)
         {
             stored = PersistentNotification.Create(notification.UserId, notification.Type, persistent.Title,

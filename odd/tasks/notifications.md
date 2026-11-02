@@ -372,3 +372,11 @@ User: "ok, adelante. Bien visto"
 - Verification: Akay.To.Azure.Tests 109 passed; Akay.Be 260 passed, zero failed/skipped, exit 0 (local project references).
 - Release coordination pending: Akay.Be CI still references `Akay.To.Azure 2.0.5` from NuGet. The new API requires versioning/publishing `Akay.To.Azure` and bumping `Directory.Packages.props`; publishing was not authorized, so it was not done. Note the optional-parameter addition is source-compatible but binary-breaking.
 - Cancellation is best effort at transport level: forwarding the token does not guarantee non-delivery.
+
+### L10 - Explicit persistent flag on the wire
+
+- User asked how the client distinguishes a bell notification from a screen-state event when both use one hub. Decision: keep one hub; add `isPersistent` to the transport DTO and route by two independent fields (`isPersistent` = update counter, `type` = screen dispatch).
+- `NotificationMessage.IsPersistent` is derived from `NotificationId`, so they cannot disagree. No database column and no DDL change: the stored row is the persistence.
+- Updated Application and Host SignalR tests to assert `isPersistent` true/false; README documents the contract and recommends refetching `unread-count` on persistent events.
+- Also added a temporary anonymous `POST /api/notifications/test` endpoint that sends a fully populated persistent notification to user 1 for front SignalR smoke testing; user will remove it.
+- Full suite: Domain 89, Application 165, Architecture 4, Infrastructure 41, Host 23 = **322 passed, zero failed/skipped**, exit 0.

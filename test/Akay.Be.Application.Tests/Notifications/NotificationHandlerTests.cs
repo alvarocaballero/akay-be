@@ -23,11 +23,11 @@ public sealed class NotificationHandlerTests
     {
         var ct = TestContext.Current.CancellationToken;
         var notification = PersistentNotification.Create(12, "completed", "Title", "Message", null, "{\"value\":1}", DateTimeOffset.UtcNow);
-        repository.Setup(r => r.GetPagedAsync(12, false, 2, 5, ct))
+        repository.Setup(r => r.GetPagedAsync(12, 2, 5, ct))
                   .ReturnsAsync(PagedResponse<List<PersistentNotification>>.Create([notification], 5, 2, false));
 
         var result = await new GetNotificationsHandler(user.Object, repository.Object)
-            .Handle(new GetNotificationsQuery { Page = 2, PageSize = 5, IsRead = false }, ct);
+            .Handle(new GetNotificationsQuery { Page = 2, PageSize = 5 }, ct);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);

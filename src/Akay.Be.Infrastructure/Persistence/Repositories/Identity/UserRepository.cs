@@ -34,6 +34,12 @@ internal sealed class UserRepository(ApplicationDbContext context) : BaseReposit
             //.Include(x => x.Profile)
             .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
+    public async Task<User?> GetByIdWithProfileAsync(int id, CancellationToken cancellationToken = default)
+        => await Set
+            .Include(x => x.RoleAssignments)
+            .Include(x => x.Profile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
         => await Set
             .Include(x => x.RoleAssignments)

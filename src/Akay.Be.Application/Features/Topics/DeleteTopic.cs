@@ -25,22 +25,11 @@ internal sealed class DeleteTopicCommandHandler(IAdminScopeService adminScope,
             return access.Error;
 
         var topics = await topicRepository.GetBySubjectIdAsync(topic.SubjectId, cancellationToken);
-        var deletedDisplayOrder = topic.DisplayOrder;
 
         topicRepository.Remove(topic);
+        TopicOrdering.Remove(topics, topic);
 
-        var following = topics
-            .Where(candidate => candidate.Id != topic.Id && candidate.DisplayOrder > deletedDisplayOrder)
-            .OrderBy(candidate => candidate.DisplayOrder)
-            .ThenBy(candidate => candidate.Id)
-            .ToList();
-
-        foreach (var candidate in following)
-        {
-            candidate.ChangeDisplayOrder(candidate.DisplayOrder - 1);
-        }
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        _ = await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

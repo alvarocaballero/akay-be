@@ -28,11 +28,11 @@ namespace Akay.Be.Host.Tests.Notifications;
 public sealed partial class NotificationApiTests
 {
     [Theory]
-    [InlineData("GET", "/notifications")]
-    [InlineData("GET", "/notifications/unread-count")]
-    [InlineData("PATCH", "/notifications/1/read")]
-    [InlineData("PATCH", "/notifications/read-all")]
-    [InlineData("DELETE", "/notifications/1")]
+    [InlineData("GET", "/api/notifications")]
+    [InlineData("GET", "/api/notifications/unread-count")]
+    [InlineData("PATCH", "/api/notifications/1/read")]
+    [InlineData("PATCH", "/api/notifications/read-all")]
+    [InlineData("DELETE", "/api/notifications/1")]
     [InlineData("POST", "/hub/notifications/negotiate?negotiateVersion=1")]
     public async Task Endpoints_RequireAuthentication(string method, string path)
     {
@@ -55,11 +55,11 @@ public sealed partial class NotificationApiTests
         using var client = app.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(app, 12));
 
-        var page = await client.GetFromJsonAsync<JsonElement>("/notifications?userId=99&PageSize=1&IsRead=false", ct);
+        var page = await client.GetFromJsonAsync<JsonElement>("/api/notifications?userId=99&PageSize=1", ct);
         Assert.Equal(own.Id, Assert.Single(page.GetProperty("data").EnumerateArray()).GetProperty("id").GetInt32());
-        Assert.Equal(1, await client.GetFromJsonAsync<int>("/notifications/unread-count?userId=99", ct));
-        using var read = await client.PatchAsync($"/notifications/{own.Id}/read", null, ct);
-        using var readAgain = await client.PatchAsync($"/notifications/{own.Id}/read", null, ct);
+        Assert.Equal(1, await client.GetFromJsonAsync<int>("/api/notifications/unread-count?userId=99", ct));
+        using var read = await client.PatchAsync($"/api/notifications/{own.Id}/read", null, ct);
+        using var readAgain = await client.PatchAsync($"/api/notifications/{own.Id}/read", null, ct);
         Assert.Equal(HttpStatusCode.NoContent, read.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, readAgain.StatusCode);
         Assert.NotNull(own.ReadAt);
@@ -68,8 +68,8 @@ public sealed partial class NotificationApiTests
         foreach (var method in new[] { HttpMethod.Patch, HttpMethod.Delete })
         {
             var suffix = method == HttpMethod.Patch ? "/read" : "";
-            using var foreignRequest = new HttpRequestMessage(method, $"/notifications/{foreign.Id}{suffix}");
-            using var missingRequest = new HttpRequestMessage(method, $"/notifications/{int.MaxValue}{suffix}");
+            using var foreignRequest = new HttpRequestMessage(method, $"/api/notifications/{foreign.Id}{suffix}");
+            using var missingRequest = new HttpRequestMessage(method, $"/api/notifications/{int.MaxValue}{suffix}");
             using var foreignResponse = await client.SendAsync(foreignRequest, ct);
             using var missingResponse = await client.SendAsync(missingRequest, ct);
             Assert.Equal(HttpStatusCode.NotFound, foreignResponse.StatusCode);
@@ -80,10 +80,10 @@ public sealed partial class NotificationApiTests
             Assert.Equal(foreignProblem.GetProperty("detail").GetString(), missingProblem.GetProperty("detail").GetString());
         }
 
-        using var allRead = await client.PatchAsync("/notifications/read-all", null, ct);
+        using var allRead = await client.PatchAsync("/api/notifications/read-all", null, ct);
         Assert.Equal(HttpStatusCode.NoContent, allRead.StatusCode);
         Assert.Null(foreign.ReadAt);
-        using var delete = await client.DeleteAsync($"/notifications/{own.Id}", ct);
+        using var delete = await client.DeleteAsync($"/api/notifications/{own.Id}", ct);
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
         Assert.Equal(foreign.Id, Assert.Single(repository.Items).Id);
     }
@@ -91,13 +91,12 @@ public sealed partial class NotificationApiTests
     [Theory]
     [InlineData("Page=0")]
     [InlineData("PageSize=101")]
-    [InlineData("IsAscending=true")]
     public async Task Rest_UsesDispatcherValidation(string query)
     {
         await using var app = await CreateAppAsync(new TestRepository());
         using var client = app.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(app, 12));
-        using var response = await client.GetAsync("/notifications?" + query, TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync("/api/notifications?" + query, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -124,10 +123,12 @@ public sealed partial class NotificationApiTests
             Assert.Equal("completed", arguments[1].GetProperty("type").GetString());
             Assert.Equal(42, arguments[1].GetProperty("payload").GetProperty("topicId").GetInt32());
             Assert.Equal(123, arguments[1].GetProperty("notificationId").GetInt32());
+            Assert.True(arguments[1].GetProperty("isPersistent").GetBoolean());
         }
         var foreign = await ReadFrameAsync(other, ct);
         Assert.Equal("other-user", foreign.GetProperty("arguments")[1].GetProperty("type").GetString());
         Assert.False(foreign.GetProperty("arguments")[1].TryGetProperty("notificationId", out _));
+        Assert.False(foreign.GetProperty("arguments")[1].GetProperty("isPersistent").GetBoolean());
 
         // The notification hub exposes no client-to-user publication surface.
         await SendFrameAsync(first, "{\"type\":1,\"invocationId\":\"1\",\"target\":\"SendToUser\",\"arguments\":[\"99\",\"spoofed\"]}", ct);
@@ -221,8 +222,8 @@ public sealed partial class NotificationApiTests
     private sealed class TestRepository : INotificationRepository
     {
         public List<PersistentNotification> Items { get; } = [];
-        public Task<PagedResponse<List<PersistentNotification>>> GetPagedAsync(int userId, bool? isRead, int page, int pageSize, CancellationToken cancellationToken) =>
-            Task.FromResult(PagedResponse<List<PersistentNotification>>.Create(Items.Where(n => n.UserId == userId && (!isRead.HasValue || n.ReadAt.HasValue == isRead))
+        public Task<PagedResponse<List<PersistentNotification>>> GetPagedAsync(int userId, int page, int pageSize, CancellationToken cancellationToken) =>
+            Task.FromResult(PagedResponse<List<PersistentNotification>>.Create(Items.Where(n => n.UserId == userId && n.ReadAt == null)
                 .OrderByDescending(n => n.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToList(), pageSize, page, false));
         public Task<int> GetUnreadCountAsync(int userId, CancellationToken cancellationToken) =>
             Task.FromResult(Items.Count(n => n.UserId == userId && n.ReadAt is null));

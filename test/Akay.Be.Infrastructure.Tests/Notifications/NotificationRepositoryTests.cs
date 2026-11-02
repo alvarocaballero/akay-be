@@ -19,29 +19,6 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
         PersistentNotification.Create(userId, "completed", "Title", "Message", url, "{\"topicId\":42}", DateTimeOffset.UtcNow.AddMinutes(-age));
 
     [Fact]
-    public async Task ReviewedDdl_MatchesModelContract_WithoutMigrations()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        await using var services = await postgres.CreateServicesAsync(createSchema: false);
-        await using var scope = services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var script = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Notifications", "schema.sql"), ct);
-        await context.Database.ExecuteSqlRawAsync(script, ct);
-        var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
-        var notification = Create(12);
-        await repository.PersistAsync(notification, ct);
-        Assert.True(notification.Id > 0);
-        Assert.Equal(notification.Id, Assert.Single((await repository.GetPagedAsync(12, null, 1, 10, ct)).Data).Id);
-        Assert.Equal(1, await repository.GetUnreadCountAsync(12, ct));
-        const string indexQuery = "SELECT indexname::text AS \"Value\" FROM pg_indexes WHERE schemaname = 'notification' AND tablename = 'notification'";
-        var indexes = await context.Database.SqlQueryRaw<string>(indexQuery).ToListAsync(ct);
-        Assert.Equal(3, indexes.Count);
-        Assert.Contains("PK_notifications", indexes);
-        Assert.Contains("IX_Notification_UserId_CreatedAt", indexes);
-        Assert.Contains("IX_Notification_UserId_Unread", indexes);
-    }
-
-    [Fact]
     public async Task Persist_UsesJsonbAndExpectedIndexes_WithoutSavingBusinessChanges()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -75,7 +52,7 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
     }
 
     [Fact]
-    public async Task List_IsPagedDescendingAndOwnerFiltered_AndUnreadCountIsCorrect()
+    public async Task List_ReturnsUnreadDescendingAndOwnerFiltered()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var services = await postgres.CreateServicesAsync();
@@ -88,15 +65,13 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
         foreach (var notification in new[] { newest, older, read, Create(99) })
             await repository.PersistAsync(notification, ct);
 
-        var first = await repository.GetPagedAsync(12, null, 1, 2, ct);
-        var second = await repository.GetPagedAsync(12, null, 2, 2, ct);
+        var first = await repository.GetPagedAsync(12, 1, 2, ct);
+        var second = await repository.GetPagedAsync(12, 2, 2, ct);
         Assert.Equal(new[] { newest.Id, older.Id }, first.Data.Select(n => n.Id));
-        Assert.True(first.HasMoreItems);
-        Assert.Equal(read.Id, Assert.Single(second.Data).Id);
-        Assert.False(second.HasMoreItems);
+        Assert.False(first.HasMoreItems);
+        Assert.Empty(second.Data);
         Assert.Equal(2, await repository.GetUnreadCountAsync(12, ct));
-        Assert.Equal(2, (await repository.GetPagedAsync(12, false, 1, 10, ct)).Data.Count);
-        Assert.Equal(read.Id, Assert.Single((await repository.GetPagedAsync(12, true, 1, 10, ct)).Data).Id);
+        Assert.Equal(1, await repository.GetUnreadCountAsync(99, ct));
     }
 
     [Fact]
@@ -117,8 +92,9 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
         Assert.True(await repository.MarkReadAsync(12, own.Id, readAt, ct));
         Assert.True(await repository.MarkReadAsync(12, own.Id, readAt.AddMinutes(1), ct));
         await repository.MarkAllReadAsync(12, readAt.AddMinutes(2), ct);
-        var ownRead = Assert.Single((await repository.GetPagedAsync(12, null, 1, 10, ct)).Data);
-        Assert.Equal(readAt.ToUnixTimeMilliseconds(), ownRead.ReadAt!.Value.ToUnixTimeMilliseconds());
+        var ownReadAt = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Notifications
+            .AsNoTracking().Where(n => n.Id == own.Id).Select(n => n.ReadAt).SingleAsync(ct);
+        Assert.Equal(readAt.ToUnixTimeMilliseconds(), ownReadAt!.Value.ToUnixTimeMilliseconds());
         Assert.Equal(0, await repository.GetUnreadCountAsync(12, ct));
         Assert.Equal(1, await repository.GetUnreadCountAsync(99, ct));
         Assert.False(await repository.DeleteForUserAsync(12, foreign.Id, ct));
@@ -126,7 +102,7 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
         Assert.False(await repository.DeleteForUserAsync(12, own.Id, ct));
         Assert.False(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Notifications
                                 .IgnoreQueryFilters().AnyAsync(n => n.Id == own.Id, ct));
-        Assert.Equal(foreign.Id, Assert.Single((await repository.GetPagedAsync(99, null, 1, 10, ct)).Data).Id);
+        Assert.Equal(foreign.Id, Assert.Single((await repository.GetPagedAsync(99, 1, 10, ct)).Data).Id);
     }
 
     [Fact]
@@ -140,7 +116,7 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
 
         await service.SendAsync(new TestNotification(12, "complete", "Done", "Finished", null), ct);
 
-        var stored = Assert.Single((await repository.GetPagedAsync(12, null, 1, 10, ct)).Data);
+        var stored = Assert.Single((await repository.GetPagedAsync(12, 1, 10, ct)).Data);
         Assert.Equal("Done", stored.Title);
         Assert.Null(stored.Url);
     }
@@ -154,7 +130,7 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
         var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
         using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             await Assert.ThrowsAsync<InvalidOperationException>(() => repository.PersistAsync(Create(12), ct));
-        Assert.Empty((await repository.GetPagedAsync(12, null, 1, 10, ct)).Data);
+        Assert.Empty((await repository.GetPagedAsync(12, 1, 10, ct)).Data);
     }
 
     private sealed record TestNotification(int UserId, string Type, string Title, string Message, string? Url) : IPersistentNotification;

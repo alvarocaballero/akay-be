@@ -8,7 +8,13 @@ namespace Akay.Be.Application.Features.Users;
 
 public sealed record GetUserProfileQuery(int CenterId) : IQuery<UserProfileResponse>;
 
-public sealed record UserProfileResponse(IReadOnlyList<UserRole> Roles,
+public sealed record UserProfileResponse(int Id,
+                                         Guid? ExternalId,
+                                         string Email,
+                                         string FirstName,
+                                         string LastName,
+                                         bool IsActive,
+                                         IReadOnlyList<UserRole> Roles,
                                          string Language,
                                          bool DarkMode);
 
@@ -23,7 +29,7 @@ internal sealed class GetUserProfileQueryHandler(IUserContext userContext,
         if (userId <= 0)
             return Error.Unauthorized("user.unauthenticated", "Usuario no autenticado.");
 
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        var user = await userRepository.GetByIdWithProfileAsync(userId, cancellationToken);
         if (user is null)
             return Error.NotFound("user.not_found", "Usuario no encontrado.");
 
@@ -34,7 +40,13 @@ internal sealed class GetUserProfileQueryHandler(IUserContext userContext,
 
         var profile = user.Profile;
 
-        return new UserProfileResponse(roles,
+        return new UserProfileResponse(user.Id,
+                                       user.ExternalId,
+                                       user.Email,
+                                       user.FirstName,
+                                       user.LastName,
+                                       user.IsActive,
+                                       roles,
                                        profile?.Language ?? "es-ES",
                                        profile?.DarkMode ?? false);
     }

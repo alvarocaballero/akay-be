@@ -36,6 +36,7 @@ public class SubjectTests
         Assert.Equal("Math", subject.Name);
         Assert.Equal("Description", subject.Description);
         Assert.Equal(2, subject.Centers.Count);
+        Assert.False(subject.IsActive);
     }
 
     [Fact]

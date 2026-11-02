@@ -1,3 +1,4 @@
+using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Application.Features.Notifications;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Responses;
@@ -9,13 +10,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Akay.Be.Host.Controllers;
 
 [ApiController]
-[Route("notifications")]
+[Route("api/notifications")]
 [Authorize]
 [Tags("Notifications")]
 [Produces("application/json")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-public sealed class NotificationsController(IDispatcher dispatcher) : ControllerBase
+public sealed class NotificationsController(IDispatcher dispatcher, INotificationService notifications) : ControllerBase
 {
     [HttpGet]
     [EndpointSummary("Lista las notificaciones del usuario actual, de la más reciente a la más antigua.")]
@@ -49,5 +50,31 @@ public sealed class NotificationsController(IDispatcher dispatcher) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> Delete(int id, CancellationToken cancellationToken) =>
         (await dispatcher.Send(new DeleteNotificationCommand(id), cancellationToken)).ToNoContent();
+
+    [HttpPost("test")]
+    [AllowAnonymous]
+    [EndpointSummary("TEMPORAL: envía una notificación de prueba al usuario 1 sin autorización.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IResult> SendTest(CancellationToken cancellationToken)
+    {
+        await notifications.SendAsync(new TestNotification(1,
+                                                           "test.signalr",
+                                                           "Notificación de prueba",
+                                                           "Conexión SignalR verificada correctamente.",
+                                                           "/notifications",
+                                                           42,
+                                                           "test-endpoint",
+                                                           DateTimeOffset.UtcNow), cancellationToken);
+        return Results.NoContent();
+    }
+
+    private sealed record TestNotification(int UserId,
+                                           string Type,
+                                           string Title,
+                                           string Message,
+                                           string? Url,
+                                           int TopicId,
+                                           string Source,
+                                           DateTimeOffset SentAt) : IPersistentNotification;
 }
 #pragma warning restore CS1591

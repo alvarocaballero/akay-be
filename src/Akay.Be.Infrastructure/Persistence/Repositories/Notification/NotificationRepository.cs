@@ -27,18 +27,14 @@ public sealed class NotificationRepository(ApplicationDbContext context, IServic
     }
 
     public Task<PagedResponse<List<PersistentNotification>>> GetPagedAsync(int userId,
-                                                               bool? isRead,
                                                                int page,
                                                                int pageSize,
                                                                CancellationToken cancellationToken)
     {
-        var query = Queryable.AsNoTracking().Where(n => n.UserId == userId);
-
-        if (isRead.HasValue)
-            query = query.Where(n => n.ReadAt.HasValue == isRead.Value);
-
-        return query.OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id)
-                    .ToPagedResponseAsync(page, pageSize, cancellationToken: cancellationToken);
+        return Queryable.AsNoTracking()
+            .Where(n => n.UserId == userId && n.ReadAt == null)
+            .OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id)
+            .ToPagedResponseAsync(page, pageSize, cancellationToken: cancellationToken);
     }
 
     public Task<int> GetUnreadCountAsync(int userId, CancellationToken cancellationToken) =>

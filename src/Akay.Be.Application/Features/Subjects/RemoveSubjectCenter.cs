@@ -43,7 +43,8 @@ internal sealed class RemoveSubjectCenterCommandHandler(IAdminScopeService admin
             subject.Id,
             subject.Name,
             subject.Description,
-            subject.Centers.Select(c => c.CenterId).ToList());
+            subject.Centers.Select(c => c.CenterId).ToList(),
+            subject.IsActive);
     }
 }
 

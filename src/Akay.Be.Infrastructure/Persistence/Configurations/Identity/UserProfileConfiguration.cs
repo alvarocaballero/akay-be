@@ -10,10 +10,7 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
     {
         builder.ToTable("user_profile", "identity");
 
-        builder.HasKey(x => x.Id);
-
-        builder.Property(x => x.Id)
-            .HasColumnName("id");
+        builder.HasKey(x => x.UserId);
 
         builder.Property(x => x.UserId)
             .HasColumnName("user_id")
@@ -21,23 +18,10 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
 
         builder.Property(x => x.Language)
             .HasColumnName("language")
-            .IsRequired()
             .HasMaxLength(5);
 
         builder.Property(x => x.DarkMode)
-            .HasColumnName("dark_mode")
-            .IsRequired();
-
-        builder.Property(x => x.CreatedAt)
-            .HasColumnName("created_at")
-            .IsRequired();
-
-        builder.Property(x => x.UpdatedAt)
-            .HasColumnName("updated_at");
-
-        builder.HasIndex(x => x.UserId)
-            .IsUnique()
-            .HasDatabaseName("IX_UserProfile_UserId");
+            .HasColumnName("dark_mode");
 
         builder.HasOne(x => x.User)
             .WithOne(x => x.Profile)

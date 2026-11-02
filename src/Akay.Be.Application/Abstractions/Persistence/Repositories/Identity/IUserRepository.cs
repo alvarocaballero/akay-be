@@ -12,6 +12,7 @@ public interface IUserRepository : IBaseRepository<User, int>
 {
     Task<User?> GetByExternalIdAsync(Guid externalId, CancellationToken cancellationToken = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<User?> GetByIdWithProfileAsync(int id, CancellationToken cancellationToken = default);
     Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
     Task<List<User>> GetByEmailsAsync(IEnumerable<string> emails, CancellationToken cancellationToken = default);

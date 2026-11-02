@@ -11,7 +11,8 @@ namespace Akay.Be.Application.Features.Topics;
 public sealed record UpdateTopicCommand([property: JsonIgnore] int Id,
                                         string Name,
                                         string? Description,
-                                        bool IsActive) : ICommand;
+                                        bool IsActive,
+                                        int? DisplayOrder = null) : ICommand;
 
 internal sealed class UpdateTopicCommandHandler(IAdminScopeService adminScope,
                                                 IUnitOfWork unitOfWork,
@@ -29,12 +30,25 @@ internal sealed class UpdateTopicCommandHandler(IAdminScopeService adminScope,
         if (access.IsFailure)
             return access.Error;
 
+        if (request.DisplayOrder.HasValue)
+        {
+            var topics = await topicRepository.GetBySubjectIdAsync(topic.SubjectId, cancellationToken);
+            var orderChange = TopicOrdering.MoveTo(topics, topic, request.DisplayOrder.Value);
+
+            if (orderChange == TopicOrderChange.TopicNotFound)
+                return Error.NotFound("topic.not_found", $"Tema {request.Id} no encontrado.");
+
+            if (orderChange == TopicOrderChange.InvalidDisplayOrder)
+                return Error.Validation("topic.invalid_display_order",
+                                        $"El orden debe estar entre 1 y {topics.Count}.");
+        }
+
         topic.ChangeName(request.Name);
         topic.ChangeDescription(request.Description);
         topic.ChangeActivation(request.IsActive);
 
         topicRepository.Update(topic);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        _ = await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }
@@ -47,5 +61,6 @@ public sealed class UpdateTopicCommandValidator : AbstractValidator<UpdateTopicC
         RuleFor(x => x.Id).GreaterThan(0);
         RuleFor(x => x.Name).NotEmpty().MaximumLength(250);
         RuleFor(x => x.Description).MaximumLength(1000);
+        RuleFor(x => x.DisplayOrder).GreaterThan(0).When(x => x.DisplayOrder.HasValue);
     }
 }

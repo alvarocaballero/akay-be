@@ -24,6 +24,10 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
             .HasColumnName("description")
             .HasMaxLength(2000);
 
+        builder.Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .IsRequired();
+
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

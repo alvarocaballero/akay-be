@@ -30,7 +30,7 @@ public sealed class TopicsController(IDispatcher dispatcher) : ControllerBase
         (await dispatcher.Send(new GetTopicsBySubjectQuery(subjectId), cancellationToken)).ToOk();
 
     [HttpPost("subjects/{subjectId:int}/topics")]
-    [EndpointSummary("Crea un tema al final del orden de la asignatura.")]
+    [EndpointSummary("Crea un tema en la posición indicada o al final de la asignatura.")]
     [ProducesResponseType<CreatedResponse<int>>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -39,7 +39,7 @@ public sealed class TopicsController(IDispatcher dispatcher) : ControllerBase
             .ToCreated(value => $"api/subjects/{subjectId}/topics/{value.Id}");
 
     [HttpPut("topics/{id:int}")]
-    [EndpointSummary("Actualiza el nombre, la descripción y el estado de activación de un tema.")]
+    [EndpointSummary("Actualiza los datos de un tema y, opcionalmente, su posición.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

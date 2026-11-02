@@ -27,8 +27,10 @@ public sealed class NotificationServiceTests
                      Assert.Equal("progress", message.Type);
                      Assert.Equal(70, message.Payload.GetProperty("percent").GetInt32());
                      Assert.Null(message.NotificationId);
+                     Assert.False(message.IsPersistent);
                      Assert.Null(message.Title);
                      Assert.DoesNotContain("notificationId", JsonSerializer.Serialize(message, JsonSerializerOptions.Web));
+                     Assert.Contains("\"isPersistent\":false", JsonSerializer.Serialize(message, JsonSerializerOptions.Web));
                  }).Returns(Task.CompletedTask);
 
         await CreateService().SendAsync(new Progress(12, "progress", 70), ct);
@@ -52,6 +54,7 @@ public sealed class NotificationServiceTests
                  {
                      Assert.NotNull(persisted);
                      Assert.Equal(persisted.Id, message.NotificationId);
+                     Assert.True(message.IsPersistent);
                      Assert.Equal("Done", message.Title);
                      Assert.Equal("Finished", message.Message);
                      Assert.Equal(url, message.Url);

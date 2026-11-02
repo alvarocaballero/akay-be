@@ -5,6 +5,7 @@ using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Entities.Identity;
 using Akay.Be.Domain.Enums;
 using Akay.Be.Domain.Events.Identity;
+using Akay.To.Core.Application.Abstractions.Contexts;
 using Akay.To.Core.Application.Abstractions.Persistence;
 using Akay.To.Core.Application.Results;
 using Moq;
@@ -18,6 +19,7 @@ public sealed class UserHandlerTests
     private static readonly Mock<IUserRepository> UserRepo = new();
     private static readonly Mock<IStudentRepository> StudentRepo = new();
     private static readonly Mock<ICourseRepository> CourseRepo = new();
+    private static readonly Mock<IUserContext> UserContext = new();
 
     public UserHandlerTests()
     {
@@ -26,6 +28,7 @@ public sealed class UserHandlerTests
         UserRepo.Reset();
         StudentRepo.Reset();
         CourseRepo.Reset();
+        UserContext.Reset();
         CourseRepo.Setup(x => x.GetByStudentForUpdateAsync(It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
     }
@@ -203,6 +206,90 @@ public sealed class UserHandlerTests
         StudentRepo.Verify(x => x.RemoveRange(students), Times.Once);
         CourseRepo.Verify(x => x.GetByStudentForUpdateAsync(user.Id, null, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Empty(course.Students);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfile_Should_Create_Profile_When_Not_Exists()
+    {
+        var user = User.Create("profile@example.com", "Profile", "User");
+
+        UserContext.Setup(x => x.UserId).Returns(1);
+        UserRepo.Setup(x => x.GetByIdWithProfileAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        var handler = new UpdateUserProfileCommandHandler(UserContext.Object, UnitOfWork.Object, UserRepo.Object);
+        var result = await handler.Handle(new UpdateUserProfileCommand("es-ES", true), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(user.Profile);
+        Assert.Equal("es-ES", user.Profile!.Language);
+        Assert.Equal(true, user.Profile.DarkMode);
+        UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfile_Should_Update_Existing_Profile()
+    {
+        var user = User.Create("profile@example.com", "Profile", "User");
+        user.EnsureProfile("es-ES", false);
+
+        UserContext.Setup(x => x.UserId).Returns(1);
+        UserRepo.Setup(x => x.GetByIdWithProfileAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        var handler = new UpdateUserProfileCommandHandler(UserContext.Object, UnitOfWork.Object, UserRepo.Object);
+        var result = await handler.Handle(new UpdateUserProfileCommand("en-EN", true), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("en-EN", user.Profile!.Language);
+        Assert.Equal(true, user.Profile.DarkMode);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfile_Should_Return_Unauthorized_When_Not_Authenticated()
+    {
+        UserContext.Setup(x => x.UserId).Returns(0);
+
+        var handler = new UpdateUserProfileCommandHandler(UserContext.Object, UnitOfWork.Object, UserRepo.Object);
+        var result = await handler.Handle(new UpdateUserProfileCommand("es-ES", false), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("user.unauthenticated", result.Error!.Code);
+        UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateUserProfile_Should_Return_NotFound_When_User_Does_Not_Exist()
+    {
+        UserContext.Setup(x => x.UserId).Returns(999);
+        UserRepo.Setup(x => x.GetByIdWithProfileAsync(999, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+
+        var handler = new UpdateUserProfileCommandHandler(UserContext.Object, UnitOfWork.Object, UserRepo.Object);
+        var result = await handler.Handle(new UpdateUserProfileCommand("es-ES", false), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("user.not_found", result.Error!.Code);
+        UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetUserProfile_Should_Return_Language_And_DarkMode()
+    {
+        var user = User.Create("profile@example.com", "Profile", "User");
+        user.AssignRole(10, UserRole.Teacher);
+        user.EnsureProfile("en-EN", true);
+
+        UserContext.Setup(x => x.UserId).Returns(1);
+        UserRepo.Setup(x => x.GetByIdWithProfileAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        var handler = new GetUserProfileQueryHandler(UserContext.Object, UserRepo.Object);
+        var result = await handler.Handle(new GetUserProfileQuery(10), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("profile@example.com", result.Value!.Email);
+        Assert.Equal("Profile", result.Value.FirstName);
+        Assert.True(result.Value.IsActive);
+        Assert.Equal("en-EN", result.Value.Language);
+        Assert.True(result.Value.DarkMode);
+        Assert.Equal(UserRole.Teacher, Assert.Single(result.Value.Roles));
     }
 
     private static User CreateUserWithExternalId(string email, string firstName, string lastName)
