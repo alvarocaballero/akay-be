@@ -48,9 +48,9 @@ public class TopicTests
         Assert.Equal("application/pdf", added.ContentType);
         Assert.Equal("https://original", added.OriginalContentUrl);
         Assert.Equal("https://processed", added.ContentUrl);
-        Assert.Equal(ContentProcessingState.UploadPending, added.ProcessingState);
+        Assert.Equal(ContentProcessingState.Uploading, added.ProcessingState);
         Assert.Equal(ContentIndexingState.NotIndexed, added.IndexingState);
-        Assert.Equal(0, added.ProcessingAttemptId);
+        Assert.Equal(1, added.ProcessingAttemptId);
     }
 
     [Fact]

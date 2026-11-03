@@ -21,6 +21,22 @@ namespace Akay.Be.Host.Controllers;
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 public sealed class TopicContentsController(IDispatcher dispatcher) : ControllerBase
 {
+    [HttpPost("topics/{topicId:int}/contents")]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> Upload(int topicId, IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        return (await dispatcher.Send(new UploadTopicContentCommand(topicId, null, Path.GetFileName(file.FileName), file.ContentType, file.Length, stream), cancellationToken)).ToOk();
+    }
+
+    [HttpPost("topics/{topicId:int}/contents/{id:int}/retry")]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> Retry(int topicId, int id, IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        return (await dispatcher.Send(new UploadTopicContentCommand(topicId, id, Path.GetFileName(file.FileName), file.ContentType, file.Length, stream), cancellationToken)).ToOk();
+    }
+
     [HttpGet("topics/{topicId:int}/contents")]
     [EndpointSummary("Lista los contenidos de un tema.")]
     [ProducesResponseType<IReadOnlyList<TopicContentResponse>>(StatusCodes.Status200OK)]

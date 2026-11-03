@@ -62,6 +62,7 @@ public static class InfrastructureRegisterModule
             .AddServices()
             .AddRepositories();
 
+
         return services;
     }
 
@@ -73,26 +74,24 @@ public static class InfrastructureRegisterModule
         return app;
     }
 
-
     private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services
-            .AddScoped<INotificationPublisher, SignalRNotificationPublisher>()
-            .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>();
-    }
+        => services
+                .AddScoped<INotificationPublisher, SignalRNotificationPublisher>()
+                .AddScoped<IDemoSignalRHubService, DemoSignalRHubService>()
+                .AddHostedService<InterruptedTopicContentUploadWorker>();
+
     private static IServiceCollection AddRepositories(this IServiceCollection services)
-    {
-        return services
-            .AddScoped<ICenterRepository, CenterRepository>()
-            .AddScoped<IUserRepository, UserRepository>()
-            .AddScoped<IAcademicPeriodRepository, AcademicPeriodRepository>()
-            .AddScoped<ICourseRepository, CourseRepository>()
-            .AddScoped<ISubjectRepository, SubjectRepository>()
-            .AddScoped<ITopicRepository, TopicRepository>()
-            .AddScoped<ITopicContentRepository, TopicContentRepository>()
-            .AddScoped<ITopicAdditionalContentRepository, TopicAdditionalContentRepository>()
-            .AddScoped<IStudentRepository, StudentRepository>()
-            .AddScoped<INotificationRepository, NotificationRepository>();
-    }
+        => services
+                .AddScoped<ICenterRepository, CenterRepository>()
+                .AddScoped<IUserRepository, UserRepository>()
+                .AddScoped<IAcademicPeriodRepository, AcademicPeriodRepository>()
+                .AddScoped<ICourseRepository, CourseRepository>()
+                .AddScoped<ISubjectRepository, SubjectRepository>()
+                .AddScoped<ITopicRepository, TopicRepository>()
+                .AddScoped<ITopicContentRepository, TopicContentRepository>()
+                .AddScoped<ITopicAdditionalContentRepository, TopicAdditionalContentRepository>()
+                .AddScoped<IStudentRepository, StudentRepository>()
+                .AddScoped<INotificationRepository, NotificationRepository>();
+}
 
 }

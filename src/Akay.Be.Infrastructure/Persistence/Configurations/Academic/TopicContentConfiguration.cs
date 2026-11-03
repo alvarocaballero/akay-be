@@ -38,6 +38,7 @@ internal sealed class TopicContentConfiguration : IEntityTypeConfiguration<Topic
         builder.Property(x => x.ProcessingState)
             .HasColumnName("processing_state")
             .IsRequired()
+            .IsConcurrencyToken()
             .HasConversion<short>();
 
         builder.Property(x => x.IndexingState)
@@ -53,7 +54,11 @@ internal sealed class TopicContentConfiguration : IEntityTypeConfiguration<Topic
 
         builder.Property(x => x.ProcessingAttemptId)
             .HasColumnName("processing_attempt_id")
+            .IsConcurrencyToken()
             .IsRequired();
+
+        builder.Property(x => x.UploadStartedAt).HasColumnName("upload_started_at");
+        builder.Property(x => x.UploadUserId).HasColumnName("upload_user_id");
 
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
@@ -63,7 +68,8 @@ internal sealed class TopicContentConfiguration : IEntityTypeConfiguration<Topic
             .HasColumnName("updated_at");
 
         builder.Property(x => x.DeletedAt)
-            .HasColumnName("deleted_at");
+            .HasColumnName("deleted_at")
+            .IsConcurrencyToken();
 
         builder.HasIndex(x => x.TopicId)
             .HasDatabaseName("IX_TopicContent_TopicId");

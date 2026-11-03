@@ -252,6 +252,8 @@ CREATE TABLE academic.topic_content (
     processing_error text,
     indexing_error text,
     processing_attempt_id integer NOT NULL,
+    upload_started_at timestamp with time zone,
+    upload_user_id integer,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
