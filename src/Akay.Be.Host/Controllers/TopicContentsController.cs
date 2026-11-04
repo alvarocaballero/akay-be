@@ -26,15 +26,7 @@ public sealed class TopicContentsController(IDispatcher dispatcher) : Controller
     public async Task<IResult> Upload(int topicId, IFormFile file, CancellationToken cancellationToken)
     {
         await using var stream = file.OpenReadStream();
-        return (await dispatcher.Send(new UploadTopicContentCommand(topicId, null, Path.GetFileName(file.FileName), file.ContentType, file.Length, stream), cancellationToken)).ToOk();
-    }
-
-    [HttpPost("topics/{topicId:int}/contents/{id:int}/retry")]
-    [Consumes("multipart/form-data")]
-    public async Task<IResult> Retry(int topicId, int id, IFormFile file, CancellationToken cancellationToken)
-    {
-        await using var stream = file.OpenReadStream();
-        return (await dispatcher.Send(new UploadTopicContentCommand(topicId, id, Path.GetFileName(file.FileName), file.ContentType, file.Length, stream), cancellationToken)).ToOk();
+        return (await dispatcher.Send(new UploadTopicContentCommand(topicId, Path.GetFileName(file.FileName), file.ContentType, file.Length, stream), cancellationToken)).ToOk();
     }
 
     [HttpGet("topics/{topicId:int}/contents")]

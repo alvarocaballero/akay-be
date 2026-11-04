@@ -46,11 +46,11 @@ public class TopicTests
         Assert.Same(content, added);
         Assert.Equal("lesson.pdf", added.FileName);
         Assert.Equal("application/pdf", added.ContentType);
-        Assert.Equal("https://original", added.OriginalContentUrl);
+        Assert.Equal("https://original", added.SourceContentUrl);
         Assert.Equal("https://processed", added.ContentUrl);
         Assert.Equal(ContentProcessingState.Uploading, added.ProcessingState);
         Assert.Equal(ContentIndexingState.NotIndexed, added.IndexingState);
-        Assert.Equal(1, added.ProcessingAttemptId);
+        Assert.Null(added.RequestId);
     }
 
     [Fact]

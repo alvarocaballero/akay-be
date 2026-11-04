@@ -93,5 +93,3 @@ public static class InfrastructureRegisterModule
                 .AddScoped<IStudentRepository, StudentRepository>()
                 .AddScoped<INotificationRepository, NotificationRepository>();
 }
-
-}

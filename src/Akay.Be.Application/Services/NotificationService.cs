@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace Akay.Be.Application.Services;
 
 public sealed class NotificationService(INotificationRepository repository,
-                                       INotificationPublisher publisher,
-                                       ILogger<NotificationService> logger) : INotificationService
+                                        INotificationPublisher publisher,
+                                        ILogger<NotificationService> logger) : INotificationService
 {
     public async Task SendAsync<TNotification>(TNotification notification,
                                                CancellationToken cancellationToken = default)
@@ -28,8 +28,14 @@ public sealed class NotificationService(INotificationRepository repository,
 
         if (notification is IPersistentNotification persistent)
         {
-            stored = PersistentNotification.Create(notification.UserId, notification.Type, persistent.Title,
-                                          persistent.Message, persistent.Url, payload.GetRawText(), DateTimeOffset.UtcNow);
+            stored = PersistentNotification.Create(notification.UserId,
+                                                   notification.Type,
+                                                   persistent.Title,
+                                                   persistent.Message,
+                                                   persistent.Url,
+                                                   payload.GetRawText(),
+                                                   DateTimeOffset.UtcNow);
+
             await repository.PersistAsync(stored, cancellationToken);
         }
 

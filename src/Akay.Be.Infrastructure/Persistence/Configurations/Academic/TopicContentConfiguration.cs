@@ -29,8 +29,8 @@ internal sealed class TopicContentConfiguration : IEntityTypeConfiguration<Topic
             .IsRequired()
             .HasMaxLength(255);
 
-        builder.Property(x => x.OriginalContentUrl)
-            .HasColumnName("original_content_url");
+        builder.Property(x => x.SourceContentUrl)
+            .HasColumnName("source_content_url");
 
         builder.Property(x => x.ContentUrl)
             .HasColumnName("content_url");
@@ -52,20 +52,22 @@ internal sealed class TopicContentConfiguration : IEntityTypeConfiguration<Topic
         builder.Property(x => x.IndexingError)
             .HasColumnName("indexing_error");
 
-        builder.Property(x => x.ProcessingAttemptId)
-            .HasColumnName("processing_attempt_id")
-            .IsConcurrencyToken()
-            .IsRequired();
-
-        builder.Property(x => x.UploadStartedAt).HasColumnName("upload_started_at");
-        builder.Property(x => x.UploadUserId).HasColumnName("upload_user_id");
+        builder.Property(x => x.RequestId)
+            .HasColumnName("request_id")
+            .IsConcurrencyToken();
 
         builder.Property(x => x.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
 
+        builder.Property(x => x.CreatedBy)
+            .HasColumnName("created_by");
+
         builder.Property(x => x.UpdatedAt)
             .HasColumnName("updated_at");
+
+        builder.Property(x => x.UpdatedBy)
+            .HasColumnName("updated_by");
 
         builder.Property(x => x.DeletedAt)
             .HasColumnName("deleted_at")

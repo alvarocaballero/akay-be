@@ -51,7 +51,7 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
 
     public TopicContent AddContent(string fileName,
                                    string contentType,
-                                   string? originalContentUrl = null,
+                                   string? sourceContentUrl = null,
                                    string? contentUrl = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
@@ -60,7 +60,7 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
         var content = TopicContent.Create(Id,
                                           fileName,
                                           contentType,
-                                          originalContentUrl,
+                                          sourceContentUrl,
                                           contentUrl);
 
         _contents.Add(content);

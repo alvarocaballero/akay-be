@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Akay.Be.Application.Features.TopicContents;
 
-public sealed record UploadTopicContentCommand(int TopicId, int? ContentId, string FileName, string ContentType, long Length, Stream Content) : ICommand<TopicContentResponse>;
+public sealed record UploadTopicContentCommand(int TopicId, string FileName, string ContentType, long Length, Stream Content) : ICommand<TopicContentResponse>;
 
 public sealed record TopicContentStateChanged(int UserId, int TopicId, int TopicContentId, ContentProcessingState State) : INotification
 {
@@ -37,6 +37,10 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
             || request.FileName.Length > 500 || string.IsNullOrWhiteSpace(request.ContentType) || request.ContentType.Length > 255)
             return Error.Validation("topic_content.invalid_file", "El archivo debe tener un nombre y tipo válidos y un tamaño entre 1 byte y 20 MB.");
 
+        var extension = Path.GetExtension(request.FileName);
+        if (extension.Length is < 2 or > 17 || !extension[1..].All(char.IsAsciiLetterOrDigit))
+            return Error.Validation("topic_content.invalid_extension", "El archivo debe tener una extensión válida.");
+
         var topic = await topics.GetByIdAsync(request.TopicId, cancellationToken);
         if (topic is null)
             return Error.NotFound("topic.not_found", $"Tema {request.TopicId} no encontrado.");
@@ -48,24 +52,8 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
         if (userContext.UserId <= 0)
             return Error.Forbidden("topic_content.invalid_user", "Usuario no válido.");
 
-        var content = request.ContentId.HasValue ? await contents.GetByIdAsync(request.ContentId.Value, cancellationToken) : null;
-
-        if (request.ContentId.HasValue && (content is null || content.TopicId != topic.Id))
-            return Error.NotFound("topic_content.not_found", "Contenido no encontrado.");
-
-        if (content is not null && content.ProcessingState != ContentProcessingState.UploadFailed)
-            return Error.Conflict("topic_content.not_retryable", "Solo se pueden reintentar subidas fallidas.");
-
-        if (content is null)
-        {
-            content = topic.AddContent(request.FileName, request.ContentType);
-            content.SetInitialUploadDetails(userContext.UserId, DateTimeOffset.UtcNow);
-            contents.Add(content);
-        }
-        else
-        {
-            content.StartUpload(request.FileName, request.ContentType, userContext.UserId, DateTimeOffset.UtcNow);
-        }
+        var content = topic.AddContent(request.FileName, request.ContentType);
+        contents.Add(content);
 
         var saved = await unitOfWork.ResultSaveChangesAsync(cancellationToken);
         if (saved.IsFailure)
@@ -79,13 +67,14 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(UploadTimeoutSeconds));
             var storage = await storageFactory.CreateAsync("topic-content", cancellationToken: timeout.Token);
-            uri = await storage.UploadAsync($"topics/{topic.Id}/contents/{content.Id}/{content.ProcessingAttemptId}", request.Content, request.ContentType,
+            var blobName = $"subjects/{topic.SubjectId}/topics/{topic.Id}/sources/{Guid.NewGuid():D}{extension.ToLowerInvariant()}";
+            uri = await storage.UploadAsync(blobName, request.Content, request.ContentType,
                                             overwrite: false, cancellationToken: timeout.Token);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Upload failed for topic content {TopicContentId}", content.Id);
-            content.FailUpload("La subida ha fallado. Vuelve a intentarlo.");
+            content.FailUpload("La subida ha fallado. Elimina el contenido y sube el archivo de nuevo.");
 
             using var saveTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             var failed = await unitOfWork.ResultSaveChangesAsync(saveTimeout.Token);
@@ -93,7 +82,7 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
                 return failed.Error;
 
             await NotifyAsync(content.Id, content.TopicId, content.ProcessingState);
-            return Error.Internal("topic_content.upload_failed", "La subida ha fallado. Vuelve a intentarlo.");
+            return Error.Internal("topic_content.upload_failed", "La subida ha fallado. Elimina el contenido y sube el archivo de nuevo.");
         }
 
         content.CompleteUpload(uri);
@@ -104,8 +93,8 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
         await NotifyAsync(content.Id, content.TopicId, content.ProcessingState);
 
         return new TopicContentResponse(content.Id, content.TopicId, content.FileName, content.ContentType,
-                                        content.OriginalContentUrl, content.ContentUrl, content.ProcessingState,
-                                        content.IndexingState, content.ProcessingError, content.IndexingError, content.ProcessingAttemptId);
+                                        content.SourceContentUrl, content.ContentUrl, content.ProcessingState,
+                                        content.IndexingState, content.ProcessingError, content.IndexingError, content.RequestId);
     }
 
     private async Task NotifyAsync(int contentId, int topicId, ContentProcessingState state)

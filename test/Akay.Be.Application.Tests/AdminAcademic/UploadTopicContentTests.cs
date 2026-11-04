@@ -14,20 +14,6 @@ namespace Akay.Be.Application.Tests.AdminAcademic;
 
 public class UploadTopicContentTests
 {
-    [Fact]
-    public void RetryRequiresFailureAndIncrementsAttempt()
-    {
-        var topic = Topic.Create(10, "Topic");
-        var content = topic.AddContent("file.pdf", "application/pdf");
-        content.SetInitialUploadDetails(1, DateTimeOffset.UtcNow);
-        Assert.Throws<InvalidOperationException>(() => content.StartUpload("file.pdf", "application/pdf", 1, DateTimeOffset.UtcNow));
-        content.FailUpload("failed");
-        content.StartUpload("file.pdf", "application/pdf", 1, DateTimeOffset.UtcNow);
-        Assert.Equal(2, content.ProcessingAttemptId);
-        Assert.Equal(ContentProcessingState.Uploading, content.ProcessingState);
-        Assert.Null(content.ProcessingError);
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -62,11 +48,22 @@ public class UploadTopicContentTests
                                                            NullLogger<UploadTopicContentCommandHandler>.Instance);
         using var stream = new MemoryStream([1, 2, 3]);
 
-        var result = await handler.Handle(new UploadTopicContentCommand(5, null, "file.pdf", "application/pdf", 3, stream), CancellationToken.None);
+        var result = await handler.Handle(new UploadTopicContentCommand(5, "file.pdf", "application/pdf", 3, stream), CancellationToken.None);
 
         Assert.Equal(!uploadFails, result.IsSuccess);
         Assert.Equal([ContentProcessingState.Uploading, uploadFails ? ContentProcessingState.UploadFailed : ContentProcessingState.Pending], savedStates);
-        Assert.Equal(uploadFails ? null : "https://example.invalid/blob", created!.OriginalContentUrl);
+        Assert.Equal(uploadFails ? null : "https://example.invalid/blob", created!.SourceContentUrl);
+        Assert.Equal("file.pdf", created.FileName);
+        Assert.Null(created.RequestId);
+        blob.Verify(x => x.UploadAsync(It.Is<string>(name => IsExpectedBlobName(name)), It.IsAny<Stream>(), "application/pdf", false, false, It.IsAny<CancellationToken>()), Times.Once);
         notifications.Verify(x => x.SendAsync(It.IsAny<TopicContentStateChanged>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    private static bool IsExpectedBlobName(string name)
+    {
+        const string prefix = "subjects/10/topics/5/sources/";
+        return name.StartsWith(prefix, StringComparison.Ordinal)
+               && name.EndsWith(".pdf", StringComparison.Ordinal)
+               && Guid.TryParse(name[prefix.Length..^4], out _);
     }
 }

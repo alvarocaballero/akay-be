@@ -30,13 +30,13 @@ internal sealed class GetTopicContentsQueryHandler(IAdminScopeService adminScope
                                                         content.TopicId,
                                                         content.FileName,
                                                         content.ContentType,
-                                                        content.OriginalContentUrl,
+                                                        content.SourceContentUrl,
                                                         content.ContentUrl,
                                                         content.ProcessingState,
                                                         content.IndexingState,
                                                         content.ProcessingError,
                                                         content.IndexingError,
-                                                        content.ProcessingAttemptId))
+                                                        content.RequestId))
             .ToList();
     }
 }

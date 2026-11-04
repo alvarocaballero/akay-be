@@ -4,7 +4,7 @@ using Akay.To.Core.Domain.Entities;
 
 namespace Akay.Be.Domain.Entities.Academic;
 
-public sealed class TopicContent : Entity<int>, IAuditable, ISoftDeletable
+public sealed class TopicContent : Entity<int>, IUserAuditable, ISoftDeletable
 {
     private TopicContent() { }
 
@@ -12,25 +12,25 @@ public sealed class TopicContent : Entity<int>, IAuditable, ISoftDeletable
     public Topic Topic { get; private set; } = default!;
     public string FileName { get; private set; } = default!;
     public string ContentType { get; private set; } = default!;
-    public string? OriginalContentUrl { get; private set; }
+    public string? SourceContentUrl { get; private set; }
     public string? ContentUrl { get; private set; }
     public ContentProcessingState ProcessingState { get; private set; }
     public ContentIndexingState IndexingState { get; private set; }
     public string? ProcessingError { get; private set; }
     public string? IndexingError { get; private set; }
-    public int ProcessingAttemptId { get; private set; }
-    public DateTimeOffset? UploadStartedAt { get; private set; }
-    public int? UploadUserId { get; private set; }
+    public Guid? RequestId { get; private set; }
 #pragma warning disable S1144
     public DateTimeOffset CreatedAt { get; private set; }
+    public string? CreatedBy { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
+    public string? UpdatedBy { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 #pragma warning restore S1144
 
     internal static TopicContent Create(int topicId,
                                         string fileName,
                                         string contentType,
-                                        string? originalContentUrl,
+                                        string? sourceContentUrl,
                                         string? contentUrl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
@@ -41,46 +41,18 @@ public sealed class TopicContent : Entity<int>, IAuditable, ISoftDeletable
             TopicId = topicId,
             FileName = fileName,
             ContentType = contentType,
-            OriginalContentUrl = originalContentUrl,
+            SourceContentUrl = sourceContentUrl,
             ContentUrl = contentUrl,
             ProcessingState = ContentProcessingState.Uploading,
-            IndexingState = ContentIndexingState.NotIndexed,
-            ProcessingAttemptId = 1
+            IndexingState = ContentIndexingState.NotIndexed
         };
     }
 
-    public void StartUpload(string fileName, string contentType, int userId, DateTimeOffset startedAt)
-    {
-        if (ProcessingState != ContentProcessingState.UploadFailed)
-            throw new InvalidOperationException("Only failed uploads can be retried.");
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
-        FileName = fileName;
-        ContentType = contentType;
-        ProcessingError = null;
-        ProcessingAttemptId = checked(ProcessingAttemptId + 1);
-        ProcessingState = ContentProcessingState.Uploading;
-        UploadStartedAt = startedAt;
-        UploadUserId = userId;
-    }
-
-    public void SetInitialUploadDetails(int userId, DateTimeOffset startedAt)
+    public void CompleteUpload(string sourceContentUrl)
     {
         EnsureUploading();
-        if (UploadStartedAt.HasValue)
-            throw new InvalidOperationException("Upload details have already been set.");
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
-        UploadStartedAt = startedAt;
-        UploadUserId = userId;
-    }
-
-    public void CompleteUpload(string originalContentUrl)
-    {
-        EnsureUploading();
-        ArgumentException.ThrowIfNullOrWhiteSpace(originalContentUrl);
-        OriginalContentUrl = originalContentUrl;
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceContentUrl);
+        SourceContentUrl = sourceContentUrl;
         ProcessingError = null;
         ProcessingState = ContentProcessingState.Pending;
     }

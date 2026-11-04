@@ -1,3 +1,4 @@
+using System.Globalization;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Application.Features.TopicContents;
 using Akay.Be.Domain.Enums;
@@ -42,13 +43,13 @@ internal sealed class InterruptedTopicContentUploadWorker(IServiceScopeFactory s
         var notifications = scope.ServiceProvider.GetRequiredService<INotificationService>();
         var cutoff = DateTimeOffset.UtcNow.AddMinutes(-5);
         var stale = await context.TopicContents
-            .Where(x => x.ProcessingState == ContentProcessingState.Uploading && x.UploadStartedAt < cutoff)
+            .Where(x => x.ProcessingState == ContentProcessingState.Uploading && x.CreatedAt < cutoff)
             .Take(100)
             .ToListAsync(cancellationToken);
 
         foreach (var content in stale)
         {
-            content.FailUpload("La subida se interrumpió. Vuelve a intentarlo.");
+            content.FailUpload("La subida se interrumpió. Elimina el contenido y sube el archivo de nuevo.");
             try
             {
                 await context.SaveChangesAsync(cancellationToken);
@@ -59,7 +60,7 @@ internal sealed class InterruptedTopicContentUploadWorker(IServiceScopeFactory s
                 continue;
             }
 
-            if (content.UploadUserId is int userId)
+            if (int.TryParse(content.CreatedBy, NumberStyles.None, CultureInfo.InvariantCulture, out var userId) && userId > 0)
             {
                 try
                 {

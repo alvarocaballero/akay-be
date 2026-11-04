@@ -23,12 +23,12 @@ public sealed class PersistentNotification : Entity<int>
     public DateTimeOffset? ReadAt { get; private set; }
 
     public static PersistentNotification Create(int userId,
-                                      string type,
-                                      string title,
-                                      string message,
-                                      string? url,
-                                      string? payload,
-                                      DateTimeOffset createdAt)
+                                                string type,
+                                                string title,
+                                                string message,
+                                                string? url,
+                                                string? payload,
+                                                DateTimeOffset createdAt)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(type);
