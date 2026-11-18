@@ -86,9 +86,12 @@ internal static class HostRegisterModule
            .UseExceptionHandler()
 
            .UseRequestLocalization()
-           .UseHeaderPropagation()
-           .UseHttpsRedirection()
-           .UseCors("AllowSpecificOrigins")
+           .UseHeaderPropagation();
+
+        if (!app.Environment.IsDevelopment() || !app.Configuration.GetValue<bool>("LocalDevelopment:AllowHttp"))
+            app.UseHttpsRedirection();
+
+        app.UseCors("AllowSpecificOrigins")
 
            .UseAuthentication()
            .UseAuthorization()

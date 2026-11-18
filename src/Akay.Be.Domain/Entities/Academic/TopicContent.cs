@@ -48,16 +48,19 @@ public sealed class TopicContent : Entity<int>, IUserAuditable, ISoftDeletable
         };
     }
 
-    public void CompleteUpload(string sourceContentUrl)
+    internal void CompleteUpload(string sourceContentUrl, Guid requestId)
     {
         EnsureUploading();
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceContentUrl);
+        if (requestId == Guid.Empty)
+            throw new ArgumentException("RequestId must not be empty.", nameof(requestId));
         SourceContentUrl = sourceContentUrl;
+        RequestId = requestId;
         ProcessingError = null;
         ProcessingState = ContentProcessingState.Pending;
     }
 
-    public void FailUpload(string error)
+    internal void FailUpload(string error)
     {
         EnsureUploading();
         ArgumentException.ThrowIfNullOrWhiteSpace(error);
@@ -65,7 +68,30 @@ public sealed class TopicContent : Entity<int>, IUserAuditable, ISoftDeletable
         ProcessingState = ContentProcessingState.UploadFailed;
     }
 
-    public void CompleteIndexed(string contentUrl)
+    internal void CompleteConversion(Guid requestId, string contentUrl)
+    {
+        EnsurePending(requestId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentUrl);
+        ContentUrl = contentUrl;
+        ProcessingError = null;
+        ProcessingState = ContentProcessingState.Ready;
+    }
+
+    internal void FailConversion(Guid requestId, string error)
+    {
+        EnsurePending(requestId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(error);
+        ProcessingError = error;
+        ProcessingState = ContentProcessingState.Failed;
+    }
+
+    private void EnsurePending(Guid requestId)
+    {
+        if (requestId == Guid.Empty || RequestId != requestId || ProcessingState != ContentProcessingState.Pending)
+            throw new InvalidOperationException("The conversion request is not pending.");
+    }
+
+    internal void CompleteIndexed(string contentUrl)
     {
         EnsureIndexing();
         ArgumentException.ThrowIfNullOrWhiteSpace(contentUrl);
@@ -74,7 +100,7 @@ public sealed class TopicContent : Entity<int>, IUserAuditable, ISoftDeletable
         IndexingState = ContentIndexingState.Indexed;
     }
 
-    public void FailIndexing(string error)
+    internal void FailIndexing(string error)
     {
         EnsureIndexing();
         ArgumentException.ThrowIfNullOrWhiteSpace(error);

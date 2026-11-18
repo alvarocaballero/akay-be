@@ -4,6 +4,7 @@ using Akay.Be.Application.Abstractions.Persistence.Repositories.Notification;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Application.Notifications;
 using Akay.Be.Application.Services;
+using Akay.Be.Application.Features.TopicContents;
 using Akay.Be.Domain.Entities.Identity;
 using Akay.Be.Domain.Entities.Notification;
 using Akay.Be.Infrastructure.Persistence.Context;
@@ -15,6 +16,37 @@ namespace Akay.Be.Infrastructure.Tests.Notifications;
 
 public sealed class NotificationRepositoryTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>
 {
+    [Fact]
+    public async Task PersistentCompletionKeepsIdInEnvelopeAndDoesNotSaveBusinessChanges()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var services = await postgres.CreateServicesAsync();
+        await using var scope = services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.Users.Add(User.Create("pending@example.test", "Pending", "Business"));
+        var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
+        var publisher = new RecordingPublisher();
+        var service = new NotificationService(repository, publisher, NullLogger<NotificationService>.Instance);
+
+        await service.SendAsync(new UploadBatchCompleted(12, 5, 3, "Topic", true), ct);
+
+        await using var readScope = services.CreateAsyncScope();
+        var read = readScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var stored = await read.Notifications.SingleAsync(ct);
+        using var payload = JsonDocument.Parse(stored.Payload!);
+        Assert.Equal(stored.Id, publisher.Message!.NotificationId);
+        Assert.False(payload.RootElement.TryGetProperty("notificationId", out _));
+        Assert.False(publisher.Message.Payload.TryGetProperty("notificationId", out _));
+        Assert.Equal(5, payload.RootElement.EnumerateObject().Count());
+        Assert.Equal(5, payload.RootElement.GetProperty("topicId").GetInt32());
+        Assert.Equal("Procesamiento de archivos finalizado", payload.RootElement.GetProperty("title").GetString());
+        Assert.Equal("Los archivos del tema 5-Topic han terminado de procesarse.", payload.RootElement.GetProperty("description").GetString());
+        Assert.Equal("/subjects/3/topics/5", payload.RootElement.GetProperty("url").GetString());
+        Assert.True(payload.RootElement.GetProperty("hasErrors").GetBoolean());
+        Assert.True(JsonElement.DeepEquals(payload.RootElement, publisher.Message.Payload));
+        Assert.Equal(0, await read.Users.CountAsync(ct));
+    }
+
     private static PersistentNotification Create(int userId, int age = 0, string? url = null) =>
         PersistentNotification.Create(userId, "completed", "Title", "Message", url, "{\"topicId\":42}", DateTimeOffset.UtcNow.AddMinutes(-age));
 
@@ -138,5 +170,15 @@ public sealed class NotificationRepositoryTests(PostgresFixture postgres) : ICla
     {
         public Task PublishAsync(string userId, NotificationMessage message, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("SignalR unavailable");
+    }
+
+    private sealed class RecordingPublisher : INotificationPublisher
+    {
+        public NotificationMessage? Message { get; private set; }
+        public Task PublishAsync(string userId, NotificationMessage message, CancellationToken cancellationToken)
+        {
+            Message = message;
+            return Task.CompletedTask;
+        }
     }
 }

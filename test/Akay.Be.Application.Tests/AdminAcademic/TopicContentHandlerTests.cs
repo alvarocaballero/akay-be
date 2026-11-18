@@ -81,20 +81,16 @@ public class TopicContentHandlerTests
         var topic = CreateTopic(5, 10);
         var content = CreateContent(topic, 7, "notes.pdf");
 
-        var topicContentRepository = new Mock<ITopicContentRepository>();
-        topicContentRepository.Setup(x => x.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(content);
-        topicContentRepository.Setup(x => x.Remove(content));
-
+        var topicRepository = TopicRepository(topic);
         var unitOfWork = SuccessUnitOfWork();
         var handler = new DeleteTopicContentCommandHandler(SuccessScope().Object,
                                                            unitOfWork.Object,
-                                                           TopicRepository(topic).Object,
-                                                           topicContentRepository.Object);
+                                                           topicRepository.Object);
 
         var result = await handler.Handle(new DeleteTopicContentCommand(5, 7), Ct);
 
         Assert.True(result.IsSuccess);
-        topicContentRepository.Verify(x => x.Remove(content), Times.Once);
+        topicRepository.Verify(x => x.RemoveContent(topic, content), Times.Once);
         unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -103,22 +99,19 @@ public class TopicContentHandlerTests
     {
         var topic = CreateTopic(5, 10);
         var otherTopic = CreateTopic(6, 10);
-        var content = CreateContent(otherTopic, 7, "notes.pdf");
-
-        var topicContentRepository = new Mock<ITopicContentRepository>();
-        topicContentRepository.Setup(x => x.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(content);
+        CreateContent(otherTopic, 7, "notes.pdf");
+        var topicRepository = TopicRepository(topic);
 
         var unitOfWork = new Mock<IUnitOfWork>();
         var handler = new DeleteTopicContentCommandHandler(SuccessScope().Object,
                                                            unitOfWork.Object,
-                                                           TopicRepository(topic).Object,
-                                                           topicContentRepository.Object);
+                                                           topicRepository.Object);
 
         var result = await handler.Handle(new DeleteTopicContentCommand(5, 7), Ct);
 
         Assert.True(result.IsFailure);
         Assert.Equal("topic_content.not_found", result.Error.Code);
-        topicContentRepository.Verify(x => x.Remove(It.IsAny<TopicContent>()), Times.Never);
+        topicRepository.Verify(x => x.RemoveContent(It.IsAny<Topic>(), It.IsAny<TopicContent>()), Times.Never);
         unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -131,18 +124,17 @@ public class TopicContentHandlerTests
         adminScope.Setup(x => x.EnsureCanWriteSubjectContentAsync(10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Error.Forbidden("admin.forbidden", "No tienes permisos"));
 
-        var topicContentRepository = new Mock<ITopicContentRepository>();
+        var topicRepository = TopicRepository(topic);
         var unitOfWork = new Mock<IUnitOfWork>();
         var handler = new DeleteTopicContentCommandHandler(adminScope.Object,
                                                            unitOfWork.Object,
-                                                           TopicRepository(topic).Object,
-                                                           topicContentRepository.Object);
+                                                           topicRepository.Object);
 
         var result = await handler.Handle(new DeleteTopicContentCommand(5, 7), Ct);
 
         Assert.True(result.IsFailure);
         Assert.Equal("admin.forbidden", result.Error.Code);
-        topicContentRepository.Verify(x => x.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        topicRepository.Verify(x => x.RemoveContent(It.IsAny<Topic>(), It.IsAny<TopicContent>()), Times.Never);
         unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -177,19 +169,17 @@ public class TopicContentHandlerTests
         var topic = CreateTopic(5, 10);
         var content = CreateAdditionalContent(topic, 9, "extra.pdf");
 
-        var additionalRepository = new Mock<ITopicAdditionalContentRepository>();
-        additionalRepository.Setup(x => x.GetByIdAsync(9, It.IsAny<CancellationToken>())).ReturnsAsync(content);
+        var topicRepository = TopicRepository(topic);
 
         var unitOfWork = SuccessUnitOfWork();
         var handler = new DeleteTopicAdditionalContentCommandHandler(SuccessScope().Object,
                                                                      unitOfWork.Object,
-                                                                     TopicRepository(topic).Object,
-                                                                     additionalRepository.Object);
+                                                                     topicRepository.Object);
 
         var result = await handler.Handle(new DeleteTopicAdditionalContentCommand(5, 9), Ct);
 
         Assert.True(result.IsSuccess);
-        additionalRepository.Verify(x => x.Remove(content), Times.Once);
+        topicRepository.Verify(x => x.RemoveAdditionalContent(topic, content), Times.Once);
         unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -198,22 +188,39 @@ public class TopicContentHandlerTests
     {
         var topic = CreateTopic(5, 10);
         var otherTopic = CreateTopic(6, 10);
-        var content = CreateAdditionalContent(otherTopic, 9, "extra.pdf");
-
-        var additionalRepository = new Mock<ITopicAdditionalContentRepository>();
-        additionalRepository.Setup(x => x.GetByIdAsync(9, It.IsAny<CancellationToken>())).ReturnsAsync(content);
+        CreateAdditionalContent(otherTopic, 9, "extra.pdf");
+        var topicRepository = TopicRepository(topic);
 
         var unitOfWork = new Mock<IUnitOfWork>();
         var handler = new DeleteTopicAdditionalContentCommandHandler(SuccessScope().Object,
                                                                      unitOfWork.Object,
-                                                                     TopicRepository(topic).Object,
-                                                                     additionalRepository.Object);
+                                                                     topicRepository.Object);
 
         var result = await handler.Handle(new DeleteTopicAdditionalContentCommand(5, 9), Ct);
 
         Assert.True(result.IsFailure);
         Assert.Equal("topic_additional_content.not_found", result.Error.Code);
-        additionalRepository.Verify(x => x.Remove(It.IsAny<TopicAdditionalContent>()), Times.Never);
+        topicRepository.Verify(x => x.RemoveAdditionalContent(It.IsAny<Topic>(), It.IsAny<TopicAdditionalContent>()), Times.Never);
+        unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAdditional_WhenNoWriteAccess_DoesNotRemoveContent()
+    {
+        var topic = CreateTopic(5, 10);
+        CreateAdditionalContent(topic, 9, "extra.pdf");
+        var adminScope = new Mock<IAdminScopeService>();
+        adminScope.Setup(x => x.EnsureCanWriteSubjectContentAsync(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Error.Forbidden("admin.forbidden", "No tienes permisos"));
+        var topicRepository = TopicRepository(topic);
+        var unitOfWork = new Mock<IUnitOfWork>();
+        var handler = new DeleteTopicAdditionalContentCommandHandler(adminScope.Object, unitOfWork.Object, topicRepository.Object);
+
+        var result = await handler.Handle(new DeleteTopicAdditionalContentCommand(5, 9), Ct);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("admin.forbidden", result.Error.Code);
+        topicRepository.Verify(x => x.RemoveAdditionalContent(It.IsAny<Topic>(), It.IsAny<TopicAdditionalContent>()), Times.Never);
         unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -238,6 +245,8 @@ public class TopicContentHandlerTests
     {
         var topicRepository = new Mock<ITopicRepository>();
         topicRepository.Setup(x => x.GetByIdAsync(topic.Id, It.IsAny<CancellationToken>())).ReturnsAsync(topic);
+        topicRepository.Setup(x => x.GetWithContentsAsync(topic.Id, It.IsAny<CancellationToken>())).ReturnsAsync(topic);
+        topicRepository.Setup(x => x.GetWithAdditionalContentsAsync(topic.Id, It.IsAny<CancellationToken>())).ReturnsAsync(topic);
         return topicRepository;
     }
 

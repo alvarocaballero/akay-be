@@ -14,6 +14,56 @@ namespace Akay.Be.Application.Tests.AdminAcademic;
 
 public class UploadTopicContentTests
 {
+    [Fact]
+    public async Task UploadRejectsUnsupportedExtensionBeforePersistingOrUploading()
+    {
+        var scope = new Mock<IAdminScopeService>(MockBehavior.Strict);
+        var topics = new Mock<ITopicRepository>(MockBehavior.Strict);
+        var unitOfWork = new Mock<IUnitOfWork>(MockBehavior.Strict);
+        var storage = new Mock<IBlobStorageServiceFactory>(MockBehavior.Strict);
+        var notifications = new Mock<INotificationService>(MockBehavior.Strict);
+        var user = new Mock<IUserContext>(MockBehavior.Strict);
+        var handler = new UploadTopicContentCommandHandler(scope.Object, topics.Object, unitOfWork.Object,
+                                                            storage.Object, notifications.Object, user.Object,
+                                                            NullLogger<UploadTopicContentCommandHandler>.Instance);
+        using var stream = new MemoryStream([1]);
+
+        var result = await handler.Handle(new UploadTopicContentCommand(5, "file.exe", "application/octet-stream", 1, stream),
+                                          CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        topics.VerifyNoOtherCalls();
+        unitOfWork.VerifyNoOtherCalls();
+        storage.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UploadStopsBeforeStorageWhenCreatorWasNotAudited()
+    {
+        var topic = Topic.Create(10, "Topic");
+        var topics = new Mock<ITopicRepository>();
+        topics.Setup(x => x.GetByIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync(topic);
+        topics.Setup(x => x.AddContent(topic, "file.pdf", "application/pdf", null, null))
+              .Returns(() => topic.AddContent("file.pdf", "application/pdf"));
+        var scope = new Mock<IAdminScopeService>();
+        scope.Setup(x => x.EnsureCanWriteSubjectContentAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
+        var unitOfWork = new Mock<IUnitOfWork>();
+        unitOfWork.Setup(x => x.ResultSaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Result<int>.Success(1));
+        var storage = new Mock<IBlobStorageServiceFactory>(MockBehavior.Strict);
+        var user = new Mock<IUserContext>();
+        user.SetupGet(x => x.UserId).Returns(12);
+        var handler = new UploadTopicContentCommandHandler(scope.Object, topics.Object, unitOfWork.Object,
+                                                           storage.Object, Mock.Of<INotificationService>(), user.Object,
+                                                           NullLogger<UploadTopicContentCommandHandler>.Instance);
+        using var stream = new MemoryStream([1]);
+
+        var result = await handler.Handle(new UploadTopicContentCommand(5, "file.pdf", "application/pdf", 1, stream),
+                                          CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        storage.VerifyNoOtherCalls();
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -25,13 +75,18 @@ public class UploadTopicContentTests
         topics.Setup(x => x.GetByIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync(topic);
         var scope = new Mock<IAdminScopeService>();
         scope.Setup(x => x.EnsureCanWriteSubjectContentAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success());
-        var contents = new Mock<ITopicContentRepository>();
         TopicContent? created = null;
-        contents.Setup(x => x.Add(It.IsAny<TopicContent>())).Callback<TopicContent>(item => created = item);
+        topics.Setup(x => x.AddContent(topic, "file.pdf", "application/pdf", null, null))
+              .Returns(() => created = topic.AddContent("file.pdf", "application/pdf"));
         var savedStates = new List<ContentProcessingState>();
         var uow = new Mock<IUnitOfWork>();
         uow.Setup(x => x.ResultSaveChangesAsync(It.IsAny<CancellationToken>()))
-           .ReturnsAsync(() => { savedStates.Add(created!.ProcessingState); return Result<int>.Success(1); });
+           .ReturnsAsync(() =>
+           {
+               savedStates.Add(created!.ProcessingState);
+               typeof(TopicContent).GetProperty(nameof(TopicContent.CreatedBy))!.SetValue(created, "12");
+               return Result<int>.Success(1);
+           });
         var blob = new Mock<IBlobStorageService>();
         var upload = blob.Setup(x => x.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string>(), false, false, It.IsAny<CancellationToken>()));
         if (uploadFails)
@@ -43,7 +98,7 @@ public class UploadTopicContentTests
         var notifications = new Mock<INotificationService>();
         var user = new Mock<IUserContext>();
         user.SetupGet(x => x.UserId).Returns(12);
-        var handler = new UploadTopicContentCommandHandler(scope.Object, topics.Object, contents.Object, uow.Object,
+        var handler = new UploadTopicContentCommandHandler(scope.Object, topics.Object, uow.Object,
                                                            factory.Object, notifications.Object, user.Object,
                                                            NullLogger<UploadTopicContentCommandHandler>.Instance);
         using var stream = new MemoryStream([1, 2, 3]);
@@ -51,10 +106,11 @@ public class UploadTopicContentTests
         var result = await handler.Handle(new UploadTopicContentCommand(5, "file.pdf", "application/pdf", 3, stream), CancellationToken.None);
 
         Assert.Equal(!uploadFails, result.IsSuccess);
+        topics.Verify(x => x.AddContent(topic, "file.pdf", "application/pdf", null, null), Times.Once);
         Assert.Equal([ContentProcessingState.Uploading, uploadFails ? ContentProcessingState.UploadFailed : ContentProcessingState.Pending], savedStates);
         Assert.Equal(uploadFails ? null : "https://example.invalid/blob", created!.SourceContentUrl);
         Assert.Equal("file.pdf", created.FileName);
-        Assert.Null(created.RequestId);
+        Assert.Equal(!uploadFails, created.RequestId.HasValue);
         blob.Verify(x => x.UploadAsync(It.Is<string>(name => IsExpectedBlobName(name)), It.IsAny<Stream>(), "application/pdf", false, false, It.IsAny<CancellationToken>()), Times.Once);
         notifications.Verify(x => x.SendAsync(It.IsAny<TopicContentStateChanged>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }

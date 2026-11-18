@@ -10,14 +10,13 @@ public sealed record DeleteTopicContentCommand(int TopicId, int Id) : ICommand;
 
 internal sealed class DeleteTopicContentCommandHandler(IAdminScopeService adminScope,
                                                       IUnitOfWork unitOfWork,
-                                                      ITopicRepository topicRepository,
-                                                      ITopicContentRepository topicContentRepository) : ICommandHandler<DeleteTopicContentCommand>
+                                                      ITopicRepository topicRepository) : ICommandHandler<DeleteTopicContentCommand>
 {
     public async ValueTask<Result> Handle(DeleteTopicContentCommand request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var topic = await topicRepository.GetByIdAsync(request.TopicId, cancellationToken);
+        var topic = await topicRepository.GetWithContentsAsync(request.TopicId, cancellationToken);
         if (topic is null)
             return Error.NotFound("topic.not_found", $"Tema {request.TopicId} no encontrado.");
 
@@ -25,11 +24,11 @@ internal sealed class DeleteTopicContentCommandHandler(IAdminScopeService adminS
         if (access.IsFailure)
             return access.Error;
 
-        var content = await topicContentRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (content is null || content.TopicId != topic.Id)
+        var content = topic.Contents.SingleOrDefault(x => x.Id == request.Id);
+        if (content is null)
             return Error.NotFound("topic_content.not_found", $"Contenido {request.Id} no encontrado.");
 
-        topicContentRepository.Remove(content);
+        topicRepository.RemoveContent(topic, content);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

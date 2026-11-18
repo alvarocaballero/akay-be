@@ -44,12 +44,13 @@ internal sealed class InterruptedTopicContentUploadWorker(IServiceScopeFactory s
         var cutoff = DateTimeOffset.UtcNow.AddMinutes(-5);
         var stale = await context.TopicContents
             .Where(x => x.ProcessingState == ContentProcessingState.Uploading && x.CreatedAt < cutoff)
+            .Include(x => x.Topic).ThenInclude(x => x.Contents)
             .Take(100)
             .ToListAsync(cancellationToken);
 
         foreach (var content in stale)
         {
-            content.FailUpload("La subida se interrumpió. Elimina el contenido y sube el archivo de nuevo.");
+            content.Topic.FailContentUpload(content, "La subida se interrumpió. Elimina el contenido y sube el archivo de nuevo.");
             try
             {
                 await context.SaveChangesAsync(cancellationToken);

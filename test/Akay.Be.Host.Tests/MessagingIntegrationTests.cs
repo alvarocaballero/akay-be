@@ -1,19 +1,49 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Akay.Be.Application.Features.LearningHubs.Messaging;
+using Akay.Be.Application.Features.TopicContents;
 using Akay.Be.Host.Consumers.Messaging;
 using Akay.To.Core.Application.Abstractions.Mediator;
 using Akay.To.Core.Application.Abstractions.Messaging;
 using Akay.To.Core.Application.ApplicationSettings;
-using Akay.To.Core.Application.Results;
 using Akay.To.Messaging.Rebus.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Rebus.Transport.InMem;
 
 namespace Akay.Be.Host.Tests;
 
 public sealed class MessagingIntegrationTests
 {
+    [Fact]
+    public async Task ConversionCommandUsesConfiguredQueueAndExactWireJson()
+    {
+        var configPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Akay.Be.Host", "appsettings.json"));
+        using var config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath, TestContext.Current.CancellationToken));
+        var route = config.RootElement.GetProperty("MessagingSettings").GetProperty("Routes").GetProperty(typeof(ConversionRequest).FullName!).GetString()!;
+        Assert.Equal("convert-to-markdown", route);
+        var settings = new MessagingSettings { Transport = MessagingTransportNames.InMemory, InputQueueName = "backend-test" };
+        settings.Routes.Add(typeof(ConversionRequest).FullName!, route);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddRebusMessaging(settings, typeof(ConversionRequest).Assembly);
+        await using var provider = services.BuildServiceProvider();
+        var network = provider.GetRequiredService<InMemNetwork>();
+        network.CreateQueue(route);
+        var request = new ConversionRequest(Guid.NewGuid(), new ConversionSource("blob", "subjects/1/source.pdf"),
+                                            "subjects/1/content.md", "document", true, "topic-content", new ConversionPayload(1, 2, 3));
+        await provider.GetRequiredService<IMessageBus>().SendAsync(request, TestContext.Current.CancellationToken);
+        var message = Assert.Single(network.GetMessages(route));
+        using var json = JsonDocument.Parse(message.Body);
+        Assert.Equal(request.requestId, json.RootElement.GetProperty("requestId").GetGuid());
+        Assert.Equal("subjects/1/source.pdf", json.RootElement.GetProperty("source").GetProperty("blobName").GetString());
+        Assert.Equal(3, json.RootElement.GetProperty("payload").GetProperty("userId").GetInt32());
+        Assert.Equal(7, json.RootElement.EnumerateObject().Count());
+        Assert.Equal(2, json.RootElement.GetProperty("source").EnumerateObject().Count());
+        Assert.Equal(3, json.RootElement.GetProperty("payload").EnumerateObject().Count());
+        Assert.Empty(network.GetMessages("backend-test"));
+    }
+
     [Fact]
     public async Task Send_LearningHubCreatedMessage_Should_Deliver_To_Consumer_And_Dispatch_Command()
     {

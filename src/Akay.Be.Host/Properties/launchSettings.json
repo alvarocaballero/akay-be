@@ -1,5 +1,20 @@
 {
   "profiles": {
+    "Local converter": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LocalDevelopment__AllowHttp": "true",
+        "MessagingSettings__ConnectionString": "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+        "MessagingSettings__FullyQualifiedNamespace": "",
+        "AzureStorageSettings__ConnectionString": "",
+        "AzureStorageSettings__BlobServiceUri": "https://stakaydevsp001.blob.core.windows.net",
+        "AzureStorageSettings__TableServiceUri": "https://stakaydevsp001.table.core.windows.net"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://0.0.0.0:5246"
+    },
     "Docker": {
       "commandName": "Docker",
       "launchBrowser": true,

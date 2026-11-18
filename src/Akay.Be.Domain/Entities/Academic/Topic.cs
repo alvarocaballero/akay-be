@@ -1,6 +1,8 @@
 using Akay.Be.Domain.Enums;
+using Akay.Be.Domain.Events.Academic;
 using Akay.To.Core.Domain.Auditing;
 using Akay.To.Core.Domain.Entities;
+using Akay.To.Core.Domain.Events;
 
 namespace Akay.Be.Domain.Entities.Academic;
 
@@ -73,6 +75,53 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
         ArgumentNullException.ThrowIfNull(content);
 
         if (!_contents.Remove(content))
+            throw new InvalidOperationException("Content does not belong to this topic.");
+    }
+
+    public void CompleteContentUpload(TopicContent content, string sourceUrl, int userId)
+    {
+        EnsureContent(content);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
+        var requestId = Guid.NewGuid();
+        content.CompleteUpload(sourceUrl, requestId);
+        RaiseDomainEvent(new TopicContentUploadCompleted(SubjectId, Id, content.Id, userId, requestId,
+                                                          content.FileName, sourceUrl), DomainEventTiming.BeforeSave);
+    }
+
+    public void FailContentUpload(TopicContent content, string error)
+    {
+        EnsureContent(content);
+        content.FailUpload(error);
+    }
+
+    public void CompleteContentConversion(TopicContent content, Guid requestId, string contentUrl)
+    {
+        EnsureContent(content);
+        content.CompleteConversion(requestId, contentUrl);
+    }
+
+    public void FailContentConversion(TopicContent content, Guid requestId, string error)
+    {
+        EnsureContent(content);
+        content.FailConversion(requestId, error);
+    }
+
+    public void CompleteContentIndexing(TopicContent content, string contentUrl)
+    {
+        EnsureContent(content);
+        content.CompleteIndexed(contentUrl);
+    }
+
+    public void FailContentIndexing(TopicContent content, string error)
+    {
+        EnsureContent(content);
+        content.FailIndexing(error);
+    }
+
+    private void EnsureContent(TopicContent content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        if (!_contents.Contains(content))
             throw new InvalidOperationException("Content does not belong to this topic.");
     }
 

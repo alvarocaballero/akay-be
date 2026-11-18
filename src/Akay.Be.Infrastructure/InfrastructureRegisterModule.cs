@@ -6,6 +6,7 @@ using Akay.Be.Application.Abstractions.Persistence.Repositories.Notification;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Organization;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Application.Notifications;
+using Akay.Be.Application.Features.TopicContents;
 using Akay.Be.Domain;
 using Akay.Be.Infrastructure.Persistence.Context;
 using Akay.Be.Infrastructure.Persistence.Repositories.Academic;
@@ -51,12 +52,10 @@ public static class InfrastructureRegisterModule
             .AddAzureCognitiveSpeechServices(settings.SpeechSettings)
             .AddAzureCognitiveTranslatorServices(settings.TranslatorSettings)
             .AddHttpClients(settings.HttpClientSettings, settings.Application?.Name, settings.Application?.Version)
-            .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!)
+            .AddRebusMessaging(settings.MessagingSettings, Assembly.GetEntryAssembly()!, typeof(ConversionRequest).Assembly)
             //.AddSqlServerEFContext<ApplicationDbContext>(settings)
             .AddNpgsqlEFContext<ApplicationDbContext>(settings)
-            // Los contratos entregables son los eventos del outbox, declarados en el ensamblado de dominio.
-            // El ancla es un marcador del propio ensamblado, no un evento concreto que puede desaparecer.
-            .AddOutboxProcessor<ApplicationDbContext>(settings, typeof(DomainAssemblyReference).Assembly);
+            .AddOutboxProcessor<ApplicationDbContext>(settings, typeof(DomainAssemblyReference).Assembly, typeof(ConversionRequest).Assembly);
 
         services
             .AddServices()

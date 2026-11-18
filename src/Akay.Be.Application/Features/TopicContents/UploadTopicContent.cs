@@ -1,3 +1,4 @@
+using System.Globalization;
 using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
 using Akay.Be.Application.Abstractions.Services;
 using Akay.Be.Domain.Enums;
@@ -17,16 +18,13 @@ public sealed record TopicContentStateChanged(int UserId, int TopicId, int Topic
     public string Type => "topicContent.stateChanged";
 }
 
-#pragma warning disable S107
 internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminScope,
                                                        ITopicRepository topics,
-                                                       ITopicContentRepository contents,
                                                        IUnitOfWork unitOfWork,
                                                        IBlobStorageServiceFactory storageFactory,
                                                        INotificationService notifications,
                                                        IUserContext userContext,
                                                        ILogger<UploadTopicContentCommandHandler> logger) : ICommandHandler<UploadTopicContentCommand, TopicContentResponse>
-#pragma warning restore S107
 {
     private const long MaximumBytes = 20 * 1024 * 1024;
     private const int UploadTimeoutSeconds = 120;
@@ -38,8 +36,8 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
             return Error.Validation("topic_content.invalid_file", "El archivo debe tener un nombre y tipo válidos y un tamaño entre 1 byte y 20 MB.");
 
         var extension = Path.GetExtension(request.FileName);
-        if (extension.Length is < 2 or > 17 || !extension[1..].All(char.IsAsciiLetterOrDigit))
-            return Error.Validation("topic_content.invalid_extension", "El archivo debe tener una extensión válida.");
+        if (ConversionContentType.FromFileName(request.FileName) is null)
+            return Error.Validation("topic_content.invalid_extension", "La extensión del archivo no está admitida.");
 
         var topic = await topics.GetByIdAsync(request.TopicId, cancellationToken);
         if (topic is null)
@@ -52,12 +50,15 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
         if (userContext.UserId <= 0)
             return Error.Forbidden("topic_content.invalid_user", "Usuario no válido.");
 
-        var content = topic.AddContent(request.FileName, request.ContentType);
-        contents.Add(content);
+        var content = topics.AddContent(topic, request.FileName, request.ContentType);
 
         var saved = await unitOfWork.ResultSaveChangesAsync(cancellationToken);
         if (saved.IsFailure)
             return saved.Error;
+
+        if (!int.TryParse(content.CreatedBy, NumberStyles.None, CultureInfo.InvariantCulture, out var creatorId)
+            || creatorId != userContext.UserId)
+            return Error.Internal("topic_content.invalid_creator", "No se pudo registrar el usuario que subió el archivo.");
 
         await NotifyAsync(content.Id, content.TopicId, content.ProcessingState);
 
@@ -74,7 +75,7 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Upload failed for topic content {TopicContentId}", content.Id);
-            content.FailUpload("La subida ha fallado. Elimina el contenido y sube el archivo de nuevo.");
+            topic.FailContentUpload(content, "La subida ha fallado. Elimina el contenido y sube el archivo de nuevo.");
 
             using var saveTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             var failed = await unitOfWork.ResultSaveChangesAsync(saveTimeout.Token);
@@ -85,7 +86,7 @@ internal sealed class UploadTopicContentCommandHandler(IAdminScopeService adminS
             return Error.Internal("topic_content.upload_failed", "La subida ha fallado. Elimina el contenido y sube el archivo de nuevo.");
         }
 
-        content.CompleteUpload(uri);
+        topic.CompleteContentUpload(content, uri, userContext.UserId);
         var completed = await unitOfWork.ResultSaveChangesAsync(cancellationToken);
         if (completed.IsFailure)
             return completed.Error;

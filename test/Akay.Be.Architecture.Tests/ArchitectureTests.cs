@@ -1,4 +1,7 @@
 using System.Reflection;
+using Akay.Be.Application.Abstractions.Persistence.Repositories.Academic;
+using Akay.Be.Domain.Entities.Academic;
+using Akay.To.Core.Application.Abstractions.Persistence;
 using Akay.To.Core.Domain.Auditing;
 using Akay.To.Core.Domain.Entities;
 using NetArchTest.Rules;
@@ -7,6 +10,14 @@ namespace Akay.Be.Architecture.Tests;
 
 public sealed class ArchitectureTests
 {
+    [Fact]
+    public void TopicChildRepositoriesExposeOnlyReadOperations()
+    {
+        Assert.True(typeof(IReadBaseRepository<TopicContent, int>).IsAssignableFrom(typeof(ITopicContentRepository)));
+        Assert.False(typeof(IWriteBaseRepository<TopicContent>).IsAssignableFrom(typeof(ITopicContentRepository)));
+        Assert.True(typeof(IReadBaseRepository<TopicAdditionalContent, int>).IsAssignableFrom(typeof(ITopicAdditionalContentRepository)));
+        Assert.False(typeof(IWriteBaseRepository<TopicAdditionalContent>).IsAssignableFrom(typeof(ITopicAdditionalContentRepository)));
+    }
 
     [Fact]
     public void ApplicationShouldNotDependOnOuterLayers()

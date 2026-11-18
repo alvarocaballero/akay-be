@@ -59,17 +59,19 @@ public sealed class TopicContentUploadConcurrencyTests
         var name = Guid.NewGuid().ToString();
         await using var setup = CreateContext(name);
         var topic = Topic.Create(1, "Topic");
-        var content = topic.AddContent("file.pdf", "application/pdf");
+        topic.AddContent("file.pdf", "application/pdf");
         setup.Topics.Add(topic);
         await setup.SaveChangesAsync(cancellationToken);
 
         await using var oldAttempt = CreateContext(name);
         await using var recovery = CreateContext(name);
-        var oldContent = await oldAttempt.TopicContents.SingleAsync(cancellationToken);
-        var recovered = await recovery.TopicContents.SingleAsync(cancellationToken);
-        recovered.FailUpload("Interrupted");
+        var oldTopic = await oldAttempt.Topics.Include(x => x.Contents).SingleAsync(cancellationToken);
+        var recoveredTopic = await recovery.Topics.Include(x => x.Contents).SingleAsync(cancellationToken);
+        var oldContent = oldTopic.Contents.Single();
+        var recovered = recoveredTopic.Contents.Single();
+        recoveredTopic.FailContentUpload(recovered, "Interrupted");
         await recovery.SaveChangesAsync(cancellationToken);
-        oldContent.CompleteUpload("https://example.invalid/old-attempt");
+        oldTopic.CompleteContentUpload(oldContent, "https://example.invalid/old-attempt", 7);
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => oldAttempt.SaveChangesAsync(cancellationToken));
     }
 
