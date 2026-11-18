@@ -28,16 +28,20 @@ internal static class ConversionPaths
     {
         if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
             throw new InvalidOperationException("The source URL is invalid.");
+
         var path = Uri.UnescapeDataString(uri.AbsolutePath);
         var prefix = $"/topic-content/subjects/{subjectId}/topics/{topicId}/sources/";
         if (!path.StartsWith(prefix, StringComparison.Ordinal))
             throw new InvalidOperationException("The source URL does not belong to this topic.");
+
         var filename = path[prefix.Length..];
         if (filename.Contains('/') || filename.Contains('\\') || !Guid.TryParse(Path.GetFileNameWithoutExtension(filename), out _))
             throw new InvalidOperationException("The source blob name is invalid.");
+
         var source = path["/topic-content/".Length..];
         var destination = $"subjects/{subjectId}/topics/{topicId}/content/{Path.GetFileNameWithoutExtension(filename)}.md";
         var destinationUri = new UriBuilder(uri) { Path = $"/topic-content/{destination}", Query = "", Fragment = "" }.Uri.AbsoluteUri;
+
         return (source, destination, destinationUri);
     }
 }
@@ -47,12 +51,15 @@ internal sealed class TopicContentUploadCompletedHandler(IOutboxEventWriter writ
     public ValueTask Handle(TopicContentUploadCompleted domainEvent, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
         var paths = ConversionPaths.FromSource(domainEvent.SourceUrl, domainEvent.SubjectId, domainEvent.TopicId);
         var type = ConversionContentType.FromFileName(domainEvent.FileName)
                    ?? throw new InvalidOperationException("Unsupported conversion content type.");
+
         writer.Enqueue(new ConversionRequest(domainEvent.RequestId, new ConversionSource("blob", paths.Source),
                                              paths.Destination, type, true, "topic-content",
                                              new ConversionPayload(domainEvent.ContentId, domainEvent.TopicId, domainEvent.UserId)));
+
         return ValueTask.CompletedTask;
     }
 }

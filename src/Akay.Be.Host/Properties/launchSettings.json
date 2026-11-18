@@ -5,12 +5,10 @@
       "launchBrowser": false,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
+        "AZURE_TENANT_ID": "08b6784e-efec-46e0-9f90-f464963a50df",
         "LocalDevelopment__AllowHttp": "true",
         "MessagingSettings__ConnectionString": "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
-        "MessagingSettings__FullyQualifiedNamespace": "",
-        "AzureStorageSettings__ConnectionString": "",
-        "AzureStorageSettings__BlobServiceUri": "https://stakaydevsp001.blob.core.windows.net",
-        "AzureStorageSettings__TableServiceUri": "https://stakaydevsp001.table.core.windows.net"
+        "MessagingSettings__FullyQualifiedNamespace": ""
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://0.0.0.0:5246"

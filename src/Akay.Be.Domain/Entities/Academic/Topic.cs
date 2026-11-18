@@ -84,8 +84,13 @@ public sealed class Topic : AggregateRoot<int>, IAuditable, ISoftDeletable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
         var requestId = Guid.NewGuid();
         content.CompleteUpload(sourceUrl, requestId);
-        RaiseDomainEvent(new TopicContentUploadCompleted(SubjectId, Id, content.Id, userId, requestId,
-                                                          content.FileName, sourceUrl), DomainEventTiming.BeforeSave);
+        RaiseDomainEvent(new TopicContentUploadCompleted(SubjectId,
+                                                         Id,
+                                                         content.Id,
+                                                         userId,
+                                                         requestId,
+                                                         content.FileName,
+                                                         sourceUrl), DomainEventTiming.BeforeSave);
     }
 
     public void FailContentUpload(TopicContent content, string error)
